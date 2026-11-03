@@ -787,16 +787,19 @@ class WorkPiece(DocItem):
                 ).invert()
 
         # 4. Final Resize Check
-        if (
-            processed_image.width != target_w
-            or processed_image.height != target_h
-        ):
-            if processed_image.width > 0 and processed_image.height > 0:
-                h_scale = target_w / processed_image.width
-                v_scale = target_h / processed_image.height
-                processed_image = util.resize_linear(
-                    processed_image, h_scale, vscale=v_scale
-                )
+        pw = processed_image.width
+        ph = processed_image.height
+        if isinstance(pw, (int, float)) and isinstance(ph, (int, float)):
+            if (
+                pw != target_w
+                or ph != target_h
+            ):
+                if pw > 0 and ph > 0:
+                    h_scale = target_w / pw
+                    v_scale = target_h / ph
+                    processed_image = util.resize_linear(
+                        processed_image, h_scale, vscale=v_scale
+                    )
 
         return processed_image
 

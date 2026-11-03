@@ -35,11 +35,41 @@ if not _HAS_GI:
     repo_mock.Graphene = MagicMock()
     repo_mock.Pango = MagicMock()
     repo_mock.PangoCairo = MagicMock()
+    repo_mock.Rsvg = MagicMock()
+    _dim = MagicMock()
+    _dim.width = 100.0
+    _dim.height = 100.0
+    repo_mock.Rsvg.Handle.new_from_data.return_value.get_dimensions.return_value = _dim
+    repo_mock.Rsvg.Handle.new_from_gfile_sync.return_value.get_dimensions.return_value = _dim
 
 try:
     import pyvips
 except (ImportError, OSError):
-    sys.modules["pyvips"] = MagicMock()
+    _vips_mock = MagicMock()
+    class _MockVipsError(Exception):
+        pass
+    _vips_mock.Error = _MockVipsError
+    _vips_img = MagicMock()
+    _vips_img.bands = 4
+    _vips_img.width = 100
+    _vips_img.height = 100
+    _vips_img.write_to_memory.return_value = b"\x00" * (100 * 100 * 4)
+    _trim_mask = MagicMock()
+    _trim_mask.bands = 4
+    _trim_mask.width = 100
+    _trim_mask.height = 100
+    _trim_mask.find_trim.return_value = (0, 0, 100, 100)
+    _trim_mask.bandjoin.return_value = _vips_img
+    _trim_mask.__gt__.return_value = _trim_mask
+    _trim_mask.__getitem__.return_value = _trim_mask
+    _vips_img.bandjoin.return_value = _vips_img
+    _vips_img.__getitem__.return_value = _trim_mask
+    _vips_img.__gt__.return_value = _trim_mask
+    _vips_mock.Image.svgload_buffer.return_value = _vips_img
+    _vips_mock.Image.new_from_memory.return_value = _vips_img
+    _vips_mock.Image.new_from_buffer.return_value = _vips_img
+    _vips_mock.Image.new_from_file.return_value = _vips_img
+    sys.modules["pyvips"] = _vips_mock
 
 import asyncio
 import gc
