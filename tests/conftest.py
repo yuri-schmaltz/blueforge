@@ -16,8 +16,30 @@ try:
     gi.require_version("Adw", "1")
     gi.require_version("Pango", "1.0")
     gi.require_version("PangoCairo", "1.0")
-except ValueError:
-    pass
+    _HAS_GI = True
+except (ValueError, ModuleNotFoundError):
+    _HAS_GI = False
+
+from unittest.mock import MagicMock
+
+if not _HAS_GI:
+    gi_mock = MagicMock()
+    sys.modules.setdefault("gi", gi_mock)
+    repo_mock = MagicMock()
+    sys.modules.setdefault("gi.repository", repo_mock)
+    repo_mock.Gtk = MagicMock()
+    repo_mock.Gdk = MagicMock()
+    repo_mock.Adw = MagicMock()
+    repo_mock.GLib = MagicMock()
+    repo_mock.Gio = MagicMock()
+    repo_mock.Graphene = MagicMock()
+    repo_mock.Pango = MagicMock()
+    repo_mock.PangoCairo = MagicMock()
+
+try:
+    import pyvips
+except (ImportError, OSError):
+    sys.modules["pyvips"] = MagicMock()
 
 import asyncio
 import gc
@@ -103,6 +125,10 @@ def _test_worker_initializer(shared_state: dict):
         "scheduler."
     )
 
+    if not _HAS_GI:
+        initialize_worker(shared_state)
+        return
+
     # This patch runs *inside the new worker process*
     # after it starts, but before the application's real initializer runs.
     with patch(
@@ -134,7 +160,7 @@ def block_glib_event_loop(request):
     """
     # Conditionally apply the patch. If the 'ui' marker is present on the
     # test, we do not apply the patch, as UI tests require GLib.idle_add.
-    if "ui" in request.keywords:
+    if not _HAS_GI or "ui" in request.keywords:
         yield
         return
 

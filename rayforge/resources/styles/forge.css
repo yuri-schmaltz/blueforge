@@ -462,3 +462,61 @@ window.splash-window {
     font-variant-numeric: tabular-nums;
     color: @forge_text;
 }
+
+/* ---- Parametric CAD & Design Studio ---- */
+
+.cad-tool-palette {
+    background-color: alpha(@forge_panel, 0.94);
+    border: 1px solid @forge_border;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.cad-tool-btn {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.cad-tool-btn:checked {
+    background-color: @forge_accent;
+    color: #ffffff;
+}
+
+.cad-ribbon {
+    background-color: alpha(@forge_panel, 0.88);
+    border-bottom: 1px solid @forge_border;
+    padding: 3px 8px;
+    min-height: 30px;
+}
+
+.cad-ribbon-btn {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 3px;
+    border-radius: 4px;
+}
+
+.cad-inspector {
+    padding-bottom: 16px;
+}
+
+.operations-timeline {
+    padding: 4px 8px;
+}
+
+.operation-timeline-card {
+    background-color: alpha(@forge_bg_soft, 0.7);
+    border: 1px solid @forge_border;
+    border-radius: 6px;
+    padding: 6px 10px;
+    transition: background-color 150ms ease-in-out;
+}
+
+.operation-timeline-card:hover {
+    background-color: alpha(@forge_bg_soft, 0.95);
+    border-color: @forge_accent;
+}
+

@@ -25,6 +25,7 @@ from ..shared.gtk import apply_css
 from ..shared.responsive_box import ResponsiveBox
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .asset_browser import AssetBrowser
+from ..cad.operations_timeline import OperationsTimelineWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -86,6 +87,7 @@ class BottomPanel(Gtk.Box):
         )
 
         self.asset_browser = AssetBrowser(doc_editor)
+        self.operations_timeline = OperationsTimelineWidget(doc_editor)
 
         self.gcode_viewer = GcodeViewer()
         self.gcode_viewer.set_margin_start(0)
@@ -153,6 +155,14 @@ class BottomPanel(Gtk.Box):
         )
         self.dock_layout.register_item(
             DockItem(
+                name="timeline",
+                icon_name="timeline-symbolic",
+                widget=self.operations_timeline,
+                label=_("Timeline"),
+            )
+        )
+        self.dock_layout.register_item(
+            DockItem(
                 name="assets",
                 icon_name="image-x-generic-symbolic",
                 widget=self.asset_browser,
@@ -197,6 +207,7 @@ class BottomPanel(Gtk.Box):
     def _build_default_layout(self):
         tabs_area = self.dock_layout.add_area()
         tabs_area.add_item(self.dock_layout.get_item("layers"))
+        tabs_area.add_item(self.dock_layout.get_item("timeline"))
         tabs_area.add_item(self.dock_layout.get_item("assets"))
         tabs_area.add_item(self.dock_layout.get_item("gcode"))
         tabs_area.add_item(self.dock_layout.get_item("console"))

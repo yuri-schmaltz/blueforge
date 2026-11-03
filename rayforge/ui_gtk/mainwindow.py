@@ -330,10 +330,21 @@ class MainWindow(Adw.ApplicationWindow):
         self._connect_toolbar_signals()
         main_ui_box.append(self.toolbar)
 
-        # Create an overlay so the right panel can float above the canvas.
+        # Contextual CAD Ribbon (alignment, distribution, aspect ratio constraints)
+        from .cad import CadInspectorTab, CadRibbon, CadToolPalette
+
+        self.cad_ribbon = CadRibbon(self)
+        main_ui_box.append(self.cad_ribbon)
+
+        # Create an overlay so the right panel and left CAD palette float above canvas.
         self._canvas_overlay = Gtk.Overlay()
         self._canvas_overlay.set_vexpand(True)
         main_ui_box.append(self._canvas_overlay)
+
+        # CAD Tool Palette docked/floating on the left side of the canvas
+        self.cad_palette = CadToolPalette()
+        self.cad_palette.tool_changed.connect(self._on_cad_tool_changed)
+        self._canvas_overlay.add_overlay(self.cad_palette)
 
         # Apply styles — load the forge.css stylesheet from disk so
         # the source of truth lives next to other resources instead
@@ -517,6 +528,17 @@ class MainWindow(Adw.ApplicationWindow):
         )
         right_pane_stack.add_titled(
             scrolled_props, "properties", _("Properties")
+        )
+
+        scrolled_cad = Gtk.ScrolledWindow()
+        scrolled_cad.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        scrolled_cad.set_vexpand(True)
+        self.cad_inspector = CadInspectorTab(self.doc_editor)
+        scrolled_cad.set_child(self.cad_inspector)
+        right_pane_stack.add_titled(
+            scrolled_cad, "cad", _("CAD & Kerf")
         )
 
         right_pane_outer.append(right_pane_switcher)
@@ -725,8 +747,6 @@ class MainWindow(Adw.ApplicationWindow):
         # response to first-interaction triggers. Popovers
         # are not created until the first interaction so the
         # initial paint isn't delayed.
-        from .coach_marks import CoachMark, COACH_MARKS
-
         self._coach_marks: dict = {}
         self._coach_mark_pending: Optional[str] = None
         # Suppresses the very first user click on a zone if
@@ -735,15 +755,14 @@ class MainWindow(Adw.ApplicationWindow):
         self._walkthrough_active: bool = False
 
         # Panel manager — coordinates right + bottom panel
-        # visibility across the three layout presets
-        # (default / compact / expanded) and per-panel overrides.
-        # The actual widgets are bound after they're constructed
-        # below; this just creates the manager.
+        # visibility across layout presets and per-panel overrides.
         from .panel_manager import PanelManager
 
         self.panel_manager = PanelManager(
             right_panel=self._right_pane,
             bottom_panel=self.bottom_panel,
+            cad_palette=self.cad_palette,
+            cad_ribbon=self.cad_ribbon,
         )
 
         # First-run walkthrough. Shown only if config.walkthrough_seen
@@ -1865,6 +1884,12 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
+
+        # Notify CAD ribbon and CAD inspector of selection change
+        if hasattr(self, "cad_ribbon"):
+            self.cad_ribbon.on_selection_changed(selected_items)
+        if hasattr(self, "cad_inspector"):
+            self.cad_inspector.on_selection_changed(selected_items)
         # If the user selected something, auto-switch the right
         # pane to the Properties tab so they immediately see what
         # changed. If they de-selected, switch back to the Workflow
@@ -2070,6 +2095,51 @@ class MainWindow(Adw.ApplicationWindow):
                 self.panel_manager.set_right_visible(visible)
             elif panel_name == "bottom":
                 self.panel_manager.set_bottom_visible(visible)
+            elif panel_name == "cad_palette":
+                self.panel_manager.set_cad_palette_visible(visible)
+            elif panel_name == "cad_ribbon":
+                self.panel_manager.set_cad_ribbon_visible(visible)
+
+    def _on_cad_tool_changed(self, sender, tool_name: str) -> None:
+        """Handle CAD tool selection from the left tool palette."""
+        logger.debug(f"MainWindow CAD tool changed: {tool_name}")
+        if tool_name == "select":
+            return
+        elif tool_name == "nodes":
+            if (
+                hasattr(self, "action_manager")
+                and "edit_sketch" in self.action_manager.actions
+            ):
+                action = self.action_manager.actions["edit_sketch"]
+                if action.get_enabled():
+                    action.activate(None)
+                    return
+        elif tool_name in (
+            "rectangle",
+            "rounded_rect",
+            "circle",
+            "arc",
+            "line",
+            "bezier",
+            "text",
+        ):
+            if (
+                hasattr(self, "action_manager")
+                and "new_sketch" in self.action_manager.actions
+            ):
+                self.action_manager.actions["new_sketch"].activate(None)
+        elif tool_name == "tabs":
+            if (
+                hasattr(self, "action_manager")
+                and "add-tabs-equidistant" in self.action_manager.actions
+            ):
+                self.action_manager.actions["add-tabs-equidistant"].activate(None)
+        elif tool_name == "offset":
+            if hasattr(self, "_right_pane_stack"):
+                try:
+                    self._right_pane_stack.set_visible_child_name("cad")
+                except Exception:
+                    pass
 
     def _install_palette_shortcut(self):
         """Register Ctrl+Shift+P as the open-command-palette shortcut."""
@@ -2192,7 +2262,7 @@ class MainWindow(Adw.ApplicationWindow):
         button, and both popovers fight for the same screen
         space.
         """
-        from .coach_marks import CoachMark, COACH_MARKS
+        from .coach_marks import COACH_MARKS
 
         config = get_context().config
         if zone in config.coach_marks_seen:

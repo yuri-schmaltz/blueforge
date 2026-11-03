@@ -55,6 +55,11 @@ rayforge/
     coach_marks.py      # Per-zone first-interaction popovers
     insights_panel.py   # Help > Insights
     panel_manager.py    # Right + bottom panel show/hide
+    cad/                # Parametric CAD & Design Studio UI
+      cad_palette.py    # Left vertical CAD tool palette
+      cad_ribbon.py     # Contextual top alignment & constraints ribbon
+      cad_inspector.py  # Geometric constraints & kerf compensation tab
+      operations_timeline.py # Passes & execution sequence timeline
     doceditor/          # Doc editor UI
     machine/            # Machine settings UI
     settings/           # App settings UI

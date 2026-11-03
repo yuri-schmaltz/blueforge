@@ -69,7 +69,7 @@ to explore the UI without hardware.
 
 ---
 
-## 2. The main window
+## 2. The main window & Parametric CAD Studio
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -77,46 +77,59 @@ to explore the UI without hardware.
 ├──────────────────────────────────────────────────────────┤
 │ Toolbar: [New] [Open] [Save] [Frame] [Send] ...         │
 ├──────────────────────────────────────────────────────────┤
-│ Coordinate bar: X  Y   L  W  H    [unit: mm]            │
+│ Contextual CAD Ribbon: [Align] [Spread] [Flip] [W] [H] ∠ │
 ├──────────┬───────────────────────────────────┬──────────┤
-│          │                                   │          │
-│          │                                   │ Right    │
-│  Canvas  │          Drawing surface          │ pane:    │
-│          │                                   │ Workflow │
-│          │                                   │   |      │
-│          │                                   │ Props    │
+│ CAD Tool │                                   │ Right    │
+│ Palette: │                                   │ pane:    │
+│ [Select] │                                   │ Workflow │
+│ [Nodes]  │          Drawing surface          │    |     │
+│ [Rect]   │         (Parametric CAD)          │  Props   │
+│ [Circle] │                                   │    |     │
+│ [Path]   │                                   │ CAD&Kerf │
+│ [Offset] │                                   │          │
 ├──────────┴───────────────────────────────────┴──────────┤
-│ Bottom panel: Layers | G-code | Console | History       │
+│ Bottom panel: Layers | Timeline | Assets | G-code | Console │
 ├──────────────────────────────────────────────────────────┤
 │ Status bar: [Mode] X Y layer op progress                │
 └──────────────────────────────────────────────────────────┘
 ```
 
-### 2.1 The canvas
+### 2.1 CAD Tool Palette (Left Strip)
 
-The canvas is a vector drawing surface. You can:
+The vertical CAD tool palette gives instant access to drawing and vector CAM tools:
+- **Select / Transform (`S`)**: Select, translate, scale, and rotate objects.
+- **Edit Nodes (`N`)**: Manipulate path vertices and spline control points.
+- **Parametric Shapes**: Rectangle (`R`), Rounded Rect (Fillet), Circle (`C`), 3-Point Arc (`A`), Polyline (`P`), Bezier Spline (`B`), and Laser Typography (`T`).
+- **CAM Tools**: Kerf Offset / Contour Expansion, Holding Tabs (Bridge Placer), and Measurement Caliper.
 
-- **Pan** with middle-mouse drag, or hold `Space` and drag.
-- **Zoom** with the mouse wheel.
-- **Select** an object with a single click.
-- **Box-select** by dragging on empty canvas.
-- **Move** selected objects by dragging them.
-- **Rotate** with `R`.
-- **Delete** with `Delete` or `Backspace`.
+### 2.2 Contextual CAD Ribbon (Top)
 
-### 2.2 The right pane (tabbed)
+Located above the canvas, the ribbon activates when items are selected:
+- **Alignment**: 1-click Align Left, Center H, Right, Top, Center V, and Bottom.
+- **Distribution & Mirroring**: Distribute horizontally/vertically, and Flip H / Flip V.
+- **Grouping**: Group, Ungroup, and Split vector shapes.
+- **Geometric Dimensions**: Direct numeric inputs for Width, Height (with Proportional Aspect Ratio Lock), and Rotation Angle.
 
-The right pane has two tabs:
+### 2.3 The "CAD & Kerf" Inspector (Right Pane)
 
-- **Workflow** — the operations stack (cut, engrave, score).
-  Drag operations to reorder them.
-- **Properties** — the selected object's properties.
-  Auto-shows when you click an object.
+Dedicated tab for manufacturing and CAM configuration:
+- **Parametric Geometry**: Exact X, Y position, Width, Height, and Corner Fillet radius.
+- **Beam Kerf Compensation**: Presets for Fiber (0.05 mm), Diode (0.12 mm), and CO2 (0.20 mm), plus custom kerf diameters and Cut Side compensation (Outside / Male, Inside / Female, On Path).
+- **Holding Tabs**: Configure bridge width and place automatic tabs to prevent loose parts from tipping into the honeycomb bed.
+- **Lead-In / Lead-Out**: Off-contour piercing (Linear or Arc) to eliminate burn dwell marks.
 
-You can also use the **View → Layout** submenu to switch
-between three preset layouts:
+### 2.4 Operations Timeline (Bottom Panel)
 
-- **Default** — both right and bottom visible
+The **Timeline** tab displays all machining passes in execution order:
+- Cards showing pass number, operation type (Engrave, Score, Cut, Frame), power/speed chips, and pass count.
+- Reorder buttons (Move Earlier / Later in sequence).
+- **Auto-Optimize Safe Sequence**: Automatically sorts operations (1. Engrave ➔ 2. Score ➔ 3. Inner Holes ➔ 4. Outer Contours) to eliminate piece fallout risks.
+
+### 2.5 Panel layouts
+
+Use **View → Panel Layout** or the header button to switch presets:
+
+- **CAD Studio** — CAD palette, ribbon, inspector, and timeline enabled (default CAD workflow)
 - **Compact** — right only (canvas focus)
 - **Expanded** — bottom only (logs focus)
 
