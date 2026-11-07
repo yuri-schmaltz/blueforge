@@ -3,7 +3,6 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 """
 
 import logging
-import time
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -35,8 +34,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self.is_initialized: bool = False
         self.max_texture_size: int = 0
         self.instances: List[Dict[str, Any]] = []
-        self.cylinder_vao: int = 0
-        self.cylinder_vbo: int = 0
         self._num_laser_luts: int = 1
 
     def init_gl(self):
@@ -132,9 +129,6 @@ class TextureArtifactRenderer(BaseRenderer):
         )
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
-        self.cylinder_vbo = self._create_vbo()
-        self.cylinder_vao = self._create_vao()
-
         self.is_initialized = True
         logger.debug("TextureArtifactRenderer initialized")
 
@@ -176,9 +170,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self,
         texture_data: TextureData,
         final_model_matrix: np.ndarray,
-        rotary_enabled: bool = False,
-        rotary_diameter: float = 25.0,
-        cylinder_vertices: Optional[np.ndarray] = None,
         laser_index: int = 0,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
@@ -239,13 +230,8 @@ class TextureArtifactRenderer(BaseRenderer):
         instance_data = {
             "texture_id": texture_id,
             "model_matrix": final_model_matrix,
-            "rotary_enabled": rotary_enabled,
-            "rotary_diameter": rotary_diameter,
             "laser_index": laser_index,
         }
-
-        if rotary_enabled and cylinder_vertices is not None:
-            instance_data["cylinder_vertices"] = cylinder_vertices
 
         self.instances.append(instance_data)
 
@@ -287,7 +273,7 @@ class TextureArtifactRenderer(BaseRenderer):
         pending_alpha: float = 0.3,
     ):
         """
-        Renders all flat (non-rotary) texture instances.
+        Renders all texture instances.
 
         Args:
             view_proj_scene_matrix: The combined Projection * View * SceneModel
@@ -311,9 +297,6 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glBindVertexArray(self.vao)
 
         for i, instance in enumerate(self.instances):
-            if instance["rotary_enabled"]:
-                continue
-
             if reached_count is not None and i >= reached_count:
                 shader.set_float("uAlpha", pending_alpha)
             else:
@@ -336,100 +319,3 @@ class TextureArtifactRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-
-    def render_cylinder(
-        self,
-        ctx: RenderContext,
-        view_proj_scene_matrix: np.ndarray,
-        shader: Shader,
-        reached_count: Optional[int] = None,
-        pending_alpha: float = 0.3,
-    ):
-        """
-        Renders all texture instances mapped onto a cylinder.
-
-        Args:
-            view_proj_scene_matrix: The combined Projection * View * SceneModel
-              matrix (P*V*M_scene), not transposed.
-            shader: The shader to use for rendering.
-            reached_count: If set, the first N texture instances are drawn
-              at full alpha; the rest are drawn dimmed. None means all at
-              full alpha.
-            pending_alpha: Alpha multiplier for unreached texture instances.
-        """
-        if not self.is_initialized or not self.instances:
-            return
-
-        t_cyl_start = time.perf_counter()
-
-        shader.use()
-
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-        shader.set_int("uTexture", 0)
-        GL.glActiveTexture(GL.GL_TEXTURE1)
-        shader.set_int("uColorLUT", 1)
-        shader.set_int("uNumLaserLUTs", self._num_laser_luts)
-
-        num_rotary = 0
-
-        for i, instance in enumerate(self.instances):
-            if not instance["rotary_enabled"]:
-                continue
-            num_rotary += 1
-
-            if reached_count is not None and i >= reached_count:
-                shader.set_float("uAlpha", pending_alpha)
-            else:
-                shader.set_float("uAlpha", 1.0)
-
-            shader.set_int("uLaserIndex", instance.get("laser_index", 0))
-
-            vertices = instance.get("cylinder_vertices")
-            if vertices is None:
-                continue
-
-            vertex_count = len(vertices) // 5
-
-            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.cylinder_vbo)
-            GL.glBufferData(
-                GL.GL_ARRAY_BUFFER,
-                vertices.nbytes,
-                vertices,
-                GL.GL_DYNAMIC_DRAW,
-            )
-
-            GL.glBindVertexArray(self.cylinder_vao)
-            GL.glVertexAttribPointer(
-                0, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(0)
-            )
-            GL.glEnableVertexAttribArray(0)
-            GL.glVertexAttribPointer(
-                1, 2, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(3 * 4)
-            )
-            GL.glEnableVertexAttribArray(1)
-            GL.glBindVertexArray(0)
-
-            # Draw using the full Scene Matrix, so it correctly
-            # inherits WCS and _model_matrix.
-            shader.set_mat4("uMVP", view_proj_scene_matrix.T)
-
-            GL.glActiveTexture(GL.GL_TEXTURE1)
-            GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
-            GL.glActiveTexture(GL.GL_TEXTURE0)
-            GL.glBindTexture(GL.GL_TEXTURE_2D, instance["texture_id"])
-
-            GL.glBindVertexArray(self.cylinder_vao)
-            GL.glDrawArrays(GL.GL_TRIANGLES, 0, vertex_count)
-            GL.glBindVertexArray(0)
-
-        GL.glActiveTexture(GL.GL_TEXTURE1)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-
-        t_cyl_elapsed = (time.perf_counter() - t_cyl_start) * 1000
-        if t_cyl_elapsed > 5:
-            logger.info(
-                f"[TEX3D] render_cylinder took {t_cyl_elapsed:.1f}ms "
-                f"(rotary={num_rotary})"
-            )

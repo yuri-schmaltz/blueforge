@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -12,7 +11,6 @@ from .models.axis import AxisSet
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState
 
-RotarySpec = Tuple[Axis, float, np.ndarray, Optional[Model]]
 HeadSpec = Tuple[Optional[Model], np.ndarray]
 
 
@@ -25,19 +23,9 @@ def _axis_direction(axis_letter: Axis) -> Tuple[float, float, float]:
     return mapping.get(axis_letter, (0.0, 0.0, 0.0))
 
 
-def _joint_axis_for_rotary(axis_letter: Axis) -> Tuple[float, float, float]:
-    mapping = {
-        Axis.A: (1.0, 0.0, 0.0),
-        Axis.B: (0.0, 1.0, 0.0),
-        Axis.C: (0.0, 0.0, 1.0),
-    }
-    return mapping.get(axis_letter, (1.0, 0.0, 0.0))
-
-
 def build_assembly(
     axis_set: AxisSet,
     head_specs: Optional[List[HeadSpec]] = None,
-    rotary_modules=None,
 ) -> Assembly:
     if head_specs is None:
         head_specs = [(None, np.eye(4, dtype=np.float64))]
@@ -78,104 +66,7 @@ def build_assembly(
             )
         )
 
-    if rotary_modules is not None:
-        active_axes = {rm.axis for rm in rotary_modules.values()}
-    else:
-        active_axes = set()
-
-    rotary_list = [
-        ac for ac in axis_set.rotary_axes if ac.letter in active_axes
-    ]
-    rotary_modules_list = []
-    for i, axis_config in enumerate(rotary_list):
-        module = None
-        if rotary_modules is not None:
-            for rm in rotary_modules.values():
-                if rm.axis == axis_config.letter:
-                    module = rm
-                    break
-        rotary_modules_list.append(module)
-        base_name = f"rotary_base_{i}"
-        chuck_name = f"rotary_chuck_{i}"
-        links.append(
-            Link(
-                base_name,
-                parent="base",
-                joint_type=JointType.FIXED,
-                local_transform=(
-                    module.transform.copy()
-                    if module
-                    else np.eye(4, dtype=np.float64)
-                ),
-            )
-        )
-        links.append(
-            Link(
-                chuck_name,
-                parent=base_name,
-                joint_type=JointType.REVOLUTE,
-                joint_axis=(1.0, 0.0, 0.0),
-                driver_axis=axis_config.letter,
-                role=LinkRole.CHUCK,
-                model=(
-                    Model(name="", path=Path(module.model_path))
-                    if module and module.model_path
-                    else None
-                ),
-            )
-        )
-
-    from .models.rotary_module import RotaryMode
-
-    replacement_modules = []
-    if rotary_modules is not None:
-        for rm in rotary_modules.values():
-            if rm.mode == RotaryMode.AXIS_REPLACEMENT:
-                if not any(rm.axis == ac.letter for ac in rotary_list):
-                    replacement_modules.append(rm)
-
-    for i, module in enumerate(replacement_modules):
-        idx = len(rotary_list) + i
-        base_name = f"rotary_base_{idx}"
-        chuck_name = f"rotary_chuck_{idx}"
-        joint_ax = (1.0, 0.0, 0.0)
-        links.append(
-            Link(
-                base_name,
-                parent="base",
-                joint_type=JointType.FIXED,
-                local_transform=module.transform.copy(),
-            )
-        )
-        links.append(
-            Link(
-                chuck_name,
-                parent=base_name,
-                joint_type=JointType.REVOLUTE,
-                joint_axis=joint_ax,
-                driver_axis=Axis.Y,
-                role=LinkRole.CHUCK,
-                model=(
-                    Model(name="", path=Path(module.model_path))
-                    if module.model_path
-                    else None
-                ),
-            )
-        )
-        rotary_modules_list.append(module)
-
-    asm = Assembly(links)
-    for i, mod in enumerate(rotary_modules_list):
-        if mod is not None:
-            asm.set_chuck_axis_offset(
-                f"rotary_chuck_{i}", mod.axis_position.copy()
-            )
-    for i, mod in enumerate(replacement_modules):
-        idx = len(rotary_list) + i
-        asm.set_chuck_axis_offset(
-            f"rotary_chuck_{idx}", mod.axis_position.copy()
-        )
-    return asm
+    return Assembly(links)
 
 
 class Kinematics:
@@ -184,41 +75,12 @@ class Kinematics:
     def __init__(self, assembly: Assembly):
         self._assembly = assembly
 
-    @property
-    def has_rotary(self) -> bool:
-        return self._assembly.has_rotary
-
-    @property
-    def rotary_diameter(self) -> Optional[float]:
-        return self._assembly.rotary_diameter
-
-    @property
-    def cylinder_axis_index(self) -> int:
-        return self._assembly.cylinder_axis_index
-
-    def cylinder_base_transform(self) -> np.ndarray:
-        return self._assembly.cylinder_base_transform()
-
-    def head_rotary_positions(
-        self,
-        state: "MachineState",
-        diameter: float,
-        focal_distance: float = 0.0,
-    ) -> Dict[str, np.ndarray]:
-        return self._assembly.head_rotary_positions(
-            state, diameter, focal_distance
-        )
-
     def head_positions(self, state: "MachineState") -> Dict[str, Point3D]:
         return self._assembly.head_positions(state)
-
-    def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
-        return self._assembly.chuck_angles(state)
 
 
 def create_kinematics(
     axis_set: AxisSet,
     head_specs: Optional[List[HeadSpec]] = None,
-    rotary_modules=None,
 ) -> Kinematics:
-    return Kinematics(build_assembly(axis_set, head_specs, rotary_modules))
+    return Kinematics(build_assembly(axis_set, head_specs))

@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
 import numpy as np
-from raygeo.geo.algo.cylindrical import transform_to_cylinder
 from raygeo.geo.shape.arc import linearize_arc
 from raygeo.geo.shape.bezier import linearize_bezier_segment
 from raygeo.image import rasterize_scanlines
@@ -27,26 +26,7 @@ from .compiled_scene import (
     TextureLayer,
     VertexLayer,
 )
-from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
-from .rotary_coords import (
-    bake_visual_positions as _bake_visual_positions,
-)
-from .rotary_coords import (
-    mu_to_visual as _mu_to_visual,
-)
-from .rotary_coords import (
-    reconstruct_mu_arc as _reconstruct_mu_arc,
-)
-from .rotary_coords import (
-    reconstruct_mu_bezier as _reconstruct_mu_bezier,
-)
-from .rotary_coords import (
-    reconstruct_mu_pos as _reconstruct_mu_pos,
-)
-from .rotary_coords import (
-    visual_end as _visual_end,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -87,23 +67,6 @@ def _remap_offsets(
                 break
         result.append(mapped)
     return result
-
-
-def _apply_cylinder(
-    verts: np.ndarray,
-    diameter: float,
-    colors: Optional[np.ndarray] = None,
-    degrees_input: bool = False,
-) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
-    if verts.size == 0 or diameter <= 0:
-        return verts, colors, np.array([0], dtype=np.int32)
-    result_verts, result_colors, cum_subs = transform_to_cylinder(
-        verts.reshape(-1, 3),
-        diameter,
-        colors,
-        degrees_input=degrees_input,
-    )
-    return result_verts, result_colors, cum_subs
 
 
 def _to_arr(raw: List[float], cols: int) -> np.ndarray:
@@ -307,9 +270,6 @@ class _WalkState:
     current_laser_uid: str = ""
     current_laser_index: int = 0
     laser_uid_order: List[str] = field(default_factory=list)
-    is_rotary: bool = False
-    rotary_diameter: float = 0.0
-    has_mapped_data: bool = False
     layer_infos: List[dict] = field(default_factory=list)
     current_layer_start: Optional[int] = None
     current_layer_has_scanlines: bool = False
@@ -334,17 +294,9 @@ class _LayerAccumulator:
         "pv_off",
         "tv_off",
         "ov_off",
-        "is_rotary",
-        "rotary_segments",
-        "current_rotary_seg",
-        "axis_position",
-        "reverse",
-        "diameter",
-        "axis_position_3d",
-        "cylinder_dir",
     )
 
-    def __init__(self, total_cmds: int, is_rotary: bool):
+    def __init__(self, total_cmds: int):
         self.pv: List[float] = []
         self.pvv: List[float] = []
         self.pvl: List[int] = []
@@ -359,42 +311,11 @@ class _LayerAccumulator:
         self.pv_off = [0] * (total_cmds + 1)
         self.tv_off = [0] * (total_cmds + 1)
         self.ov_off = [0] * (total_cmds + 1)
-        self.is_rotary = is_rotary
-        self.rotary_segments: List[dict] = []
-        self.current_rotary_seg: Optional[dict] = None
-        self.axis_position: float = 0.0
-        self.reverse: bool = False
-        self.diameter: float = 0.0
-        self.axis_position_3d: Optional[Tuple[float, ...]] = None
-        self.cylinder_dir: Optional[Tuple[float, ...]] = None
 
     def record_offset(self, cmd_idx: int):
         self.pv_off[cmd_idx + 1] = self.pv_cum
         self.tv_off[cmd_idx + 1] = self.tv_cum
         self.ov_off[cmd_idx + 1] = self.ov_cum
-
-    def begin_rotary_segment(self, cmd_idx: int, degrees_input: bool = False):
-        self.current_rotary_seg = {
-            "pv_start": len(self.pv) // 3,
-            "tv_start": len(self.tv) // 3,
-            "zpv_vtx_start": len(self.zpv) // 3,
-            "ov_start": len(self.ov_pos) // 3,
-            "cmd_start": cmd_idx + 1,
-            "diameter": 0.0,
-            "degrees_input": degrees_input,
-        }
-
-    def end_rotary_segment(self, diameter: float, cmd_idx: int):
-        seg = self.current_rotary_seg
-        assert seg is not None
-        seg["pv_end"] = len(self.pv) // 3
-        seg["tv_end"] = len(self.tv) // 3
-        seg["zpv_vtx_end"] = len(self.zpv) // 3
-        seg["ov_end"] = len(self.ov_pos) // 3
-        seg["cmd_end"] = cmd_idx
-        seg["diameter"] = diameter
-        self.rotary_segments.append(seg)
-        self.current_rotary_seg = None
 
     def has_content(self) -> bool:
         return bool(self.pv or self.tv or self.zpv or self.ov_pos)
@@ -416,34 +337,6 @@ class _LayerAccumulator:
         tv_arr = _transform_verts(tv_arr, transform)
         zpv_arr = _transform_verts(zpv_arr, transform)
         ov_pos_arr = _transform_verts(ov_pos_arr, transform)
-
-        if self.is_rotary and self.rotary_segments:
-            (
-                pv_arr,
-                pvv_arr,
-                pvl_arr,
-                tv_arr,
-                zpv_arr,
-                ov_pos_arr,
-                ov_pow_arr,
-                ov_lid_arr,
-                pv_expansion,
-            ) = _apply_cylinder_wrapping(
-                pv_arr,
-                pvv_arr,
-                pvl_arr,
-                tv_arr,
-                zpv_arr,
-                ov_pos_arr,
-                ov_pow_arr,
-                ov_lid_arr,
-                self.rotary_segments,
-                self.pv_cum,
-                self.tv_cum,
-                self.ov_cum,
-            )
-            if pv_expansion:
-                self.pv_off = _remap_offsets(self.pv_off, pv_expansion)
 
         if tv_arr.size > 0:
             tv_arr[:, 2] += Z_OFFSET_NON_POWERED
@@ -498,110 +391,8 @@ def _extract_laser_from_vec4(pvv4: np.ndarray) -> np.ndarray:
     return pvv4[:, 1:2].copy()
 
 
-def _apply_cylinder_wrapping(
-    pv_arr,
-    pvv_arr,
-    pvl_arr,
-    tv_arr,
-    zpv_arr,
-    ov_pos_arr,
-    ov_pow_arr,
-    ov_lid_arr,
-    rotary_segments,
-    pv_cum,
-    tv_cum,
-    ov_cum,
-):
-    _exp_pv: List[np.ndarray] = []
-    _exp_pvv: List[np.ndarray] = []
-    _exp_tv: List[np.ndarray] = []
-    _exp_zpv: List[np.ndarray] = []
-    _exp_ov_pos: List[np.ndarray] = []
-    _exp_ov_pow: List[np.ndarray] = []
-    pv_expansion: List[Tuple[int, np.ndarray]] = []
-
-    pvv4 = _pad_power_laser_to_vec4(pvv_arr, pvl_arr)
-    ov_pow4 = _pad_power_laser_to_vec4(ov_pow_arr, ov_lid_arr)
-
-    for seg in rotary_segments:
-        d = seg["diameter"]
-        deg_in = seg.get("degrees_input", False)
-        if d <= 0:
-            continue
-
-        pv_s = seg["pv_start"]
-        pv_e = seg.get("pv_end", pv_cum)
-        if pv_e > pv_s:
-            pv_w, pvv4_w, cum_subs = _apply_cylinder(
-                pv_arr[pv_s:pv_e],
-                d,
-                pvv4[pv_s:pv_e],
-                degrees_input=deg_in,
-            )
-            assert pvv4_w is not None
-            _exp_pv.append(pv_w)
-            _exp_pvv.append(pvv4_w)
-            pv_expansion.append((pv_s, cum_subs))
-
-        tv_s = seg["tv_start"]
-        tv_e = seg.get("tv_end", tv_cum)
-        if tv_e > tv_s:
-            tv_w, _, _ = _apply_cylinder(
-                tv_arr[tv_s:tv_e],
-                d,
-                degrees_input=deg_in,
-            )
-            _exp_tv.append(tv_w)
-
-        zpv_s = seg["zpv_vtx_start"]
-        zpv_e = seg.get("zpv_vtx_end", len(zpv_arr))
-        if zpv_e > zpv_s:
-            zpv_w, _, _ = _apply_cylinder(
-                zpv_arr[zpv_s:zpv_e],
-                d,
-                degrees_input=deg_in,
-            )
-            _exp_zpv.append(zpv_w)
-
-        ov_s = seg["ov_start"]
-        ov_e = seg.get("ov_end", ov_cum)
-        if ov_e > ov_s:
-            ov_pos_w, ov_pow4_w, _ = _apply_cylinder(
-                ov_pos_arr[ov_s:ov_e],
-                d,
-                ov_pow4[ov_s:ov_e],
-                degrees_input=deg_in,
-            )
-            assert ov_pow4_w is not None
-            _exp_ov_pos.append(ov_pos_w)
-            _exp_ov_pow.append(ov_pow4_w)
-
-    if _exp_pv:
-        pv_arr = np.concatenate(_exp_pv, axis=0)
-        pvv4 = np.concatenate(_exp_pvv, axis=0)
-    if _exp_tv:
-        tv_arr = np.concatenate(_exp_tv, axis=0)
-    if _exp_zpv:
-        zpv_arr = np.concatenate(_exp_zpv, axis=0)
-    if _exp_ov_pos:
-        ov_pos_arr = np.concatenate(_exp_ov_pos, axis=0)
-        ov_pow4 = np.concatenate(_exp_ov_pow, axis=0)
-
-    return (
-        pv_arr,
-        _extract_powers_from_vec4(pvv4),
-        _extract_laser_from_vec4(pvv4),
-        tv_arr,
-        zpv_arr,
-        ov_pos_arr,
-        _extract_powers_from_vec4(ov_pow4),
-        _extract_laser_from_vec4(ov_pow4),
-        pv_expansion,
-    )
-
-
 def _finalize_layers(
-    accumulators: dict[bool, _LayerAccumulator],
+    acc: _LayerAccumulator,
     config: RenderConfig3D,
 ) -> Tuple[List[VertexLayer], List[ScanlineOverlayLayer]]:
     flat_transform = config.world_to_visual
@@ -609,13 +400,8 @@ def _finalize_layers(
     vertex_layers: List[VertexLayer] = []
     overlay_layers: List[ScanlineOverlayLayer] = []
 
-    for acc in accumulators.values():
-        if not acc.has_content():
-            continue
-        if acc.is_rotary:
-            transform = np.eye(4, dtype=np.float32)
-        else:
-            transform = flat_transform
+    if acc.has_content():
+        transform = flat_transform
         (
             pv_arr,
             pvv_arr,
@@ -636,7 +422,6 @@ def _finalize_layers(
                 zero_power_verts=_to_flat(zpv_arr),
                 powered_cmd_offsets=acc.pv_off,
                 travel_cmd_offsets=acc.tv_off,
-                is_rotary=acc.is_rotary,
             )
         )
 
@@ -646,7 +431,6 @@ def _finalize_layers(
                 power_values=_to_flat(ov_pow_arr),
                 laser_indices=_to_flat(ov_lid_arr),
                 cmd_offsets=acc.ov_off,
-                is_rotary=acc.is_rotary,
             )
         )
 
@@ -668,11 +452,6 @@ def _generate_texture_layers(
         for j in range(li["cmd_start"], li["cmd_end"]):
             layer_ops.copy_command_from(ops, j)
 
-        is_rot = li["is_rotary"]
-
-        if is_rot:
-            layer_ops = _bake_visual_positions(layer_ops)
-
         bbox = _scanline_bbox(layer_ops)
         if bbox is None:
             continue
@@ -684,26 +463,12 @@ def _generate_texture_layers(
         tex_buf, w_px, h_px, actual_ppm = raster_result
         x0, y0, bw, bh = bbox
 
-        diameter = li["diameter"]
-
-        if is_rot and diameter > 0:
-            tex_transform = np.eye(4, dtype=np.float32)
-        else:
-            tex_transform = config.world_to_visual
-
         model = np.eye(4, dtype=np.float32)
         model[0, 0] = bw
         model[1, 1] = bh
         model[0, 3] = x0
         model[1, 3] = y0
-        final_model = (tex_transform @ model).astype(np.float32)
-
-        cyl_verts = None
-        if is_rot and diameter > 0:
-            cyl_verts = generate_cylinder_vertices(
-                grid_matrix=final_model,
-                diameter=diameter,
-            )
+        final_model = (config.world_to_visual @ model).astype(np.float32)
 
         texture_layers.append(
             TextureLayer(
@@ -711,9 +476,6 @@ def _generate_texture_layers(
                 width_px=w_px,
                 height_px=h_px,
                 model_matrix=final_model,
-                cylinder_vertices=cyl_verts,
-                rotary_diameter=diameter,
-                rotary_enabled=is_rot,
                 activation_cmd_idx=li["activation_cmd_idx"],
                 laser_uid=li.get("scanline_laser", ""),
             )
@@ -724,35 +486,12 @@ def _generate_texture_layers(
 
 def _handle_layer_start(
     st: _WalkState,
-    acc: _LayerAccumulator,
     ops: Ops,
     idx: int,
-    config: RenderConfig3D,
-    accumulators: dict[bool, _LayerAccumulator],
-) -> _LayerAccumulator:
-    layer_uid = ops.layer_uid(idx)
-    layer_cfg = None
-    if config.layer_configs and layer_uid in config.layer_configs:
-        layer_cfg = config.layer_configs[layer_uid]
-    st.is_rotary = layer_cfg.rotary_enabled if layer_cfg else False
-    st.rotary_diameter = layer_cfg.rotary_diameter if layer_cfg else 0.0
-    acc = accumulators[st.is_rotary]
-
-    acc.axis_position = layer_cfg.axis_position if layer_cfg else 0.0
-    acc.reverse = layer_cfg.reverse if layer_cfg else False
-    acc.diameter = st.rotary_diameter
-    acc.axis_position_3d = layer_cfg.axis_position_3d if layer_cfg else None
-    acc.cylinder_dir = layer_cfg.cylinder_dir if layer_cfg else None
-    st.has_mapped_data = st.is_rotary
-
-    if st.is_rotary and st.rotary_diameter > 0:
-        acc.begin_rotary_segment(idx, degrees_input=st.has_mapped_data)
-
+) -> None:
     st.current_layer_start = idx + 1
     st.current_layer_has_scanlines = False
     st.current_layer_scanline_laser = ""
-
-    return acc
 
 
 def _handle_layer_end(
@@ -765,17 +504,11 @@ def _handle_layer_end(
             {
                 "cmd_start": st.current_layer_start,
                 "cmd_end": cmd_idx,
-                "is_rotary": st.is_rotary,
-                "diameter": st.rotary_diameter,
                 "has_scanlines": st.current_layer_has_scanlines,
                 "scanline_laser": st.current_layer_scanline_laser,
                 "activation_cmd_idx": cmd_idx,
-                "axis_position": acc.axis_position,
-                "reverse": acc.reverse,
             }
         )
-    if acc.current_rotary_seg is not None:
-        acc.end_rotary_segment(st.rotary_diameter, cmd_idx)
     st.current_layer_start = None
 
 
@@ -797,13 +530,8 @@ def _update_positions(
     ops: Ops,
     idx: int,
 ) -> None:
-    st.current_pos_vis = _visual_end(ops, idx)
-    if st.has_mapped_data and st.is_rotary:
-        st.current_pos = _reconstruct_mu_pos(
-            ops, idx, acc.diameter, acc.reverse
-        )
-    else:
-        st.current_pos = ops.endpoint(idx)
+    st.current_pos_vis = ops.endpoint(idx)
+    st.current_pos = ops.endpoint(idx)
     st.is_initial = False
 
 
@@ -813,7 +541,7 @@ def _handle_move_to(
     ops: Ops,
     idx: int,
 ) -> None:
-    vis_end = _visual_end(ops, idx)
+    vis_end = ops.endpoint(idx)
     if not st.is_initial:
         acc.tv.extend(st.current_pos_vis)
         acc.tv.extend(vis_end)
@@ -827,7 +555,7 @@ def _handle_line_to(
     ops: Ops,
     idx: int,
 ) -> None:
-    vis_end = _visual_end(ops, idx)
+    vis_end = ops.endpoint(idx)
     if st.current_power > 0.0:
         acc.pv.extend(st.current_pos_vis)
         acc.pv.extend(vis_end)
@@ -850,51 +578,19 @@ def _handle_arc_to(
 ) -> None:
     end = ops.endpoint(idx)
     i_val, j_val, cw = ops.arc_params(idx)
-    if st.has_mapped_data and st.is_rotary:
-        mu_end, mu_i, mu_j, mu_cw = _reconstruct_mu_arc(
-            ops, idx, acc.diameter, acc.reverse
-        )
-        arc_row = [
-            3,
-            mu_end[0],
-            mu_end[1],
-            mu_end[2],
-            mu_i,
-            mu_j,
-            0.0,
-            0.0,
-            0.0,
-            -1.0 if mu_cw else 1.0,
-        ]
-        segments = linearize_arc(arc_row, st.current_pos)
-        vis_segs = []
-        for seg_start, seg_end in segments:
-            vis_start = _mu_to_visual(
-                seg_start,
-                acc.diameter,
-                acc.reverse,
-            )
-            vis_end_pt = _mu_to_visual(
-                seg_end,
-                acc.diameter,
-                acc.reverse,
-            )
-            vis_segs.append((vis_start, vis_end_pt))
-    else:
-        arc_row = [
-            3,
-            end[0],
-            end[1],
-            end[2],
-            i_val,
-            j_val,
-            0.0,
-            0.0,
-            0.0,
-            -1.0 if cw else 1.0,
-        ]
-        segments = linearize_arc(arc_row, st.current_pos)
-        vis_segs = segments
+    arc_row = [
+        3,
+        end[0],
+        end[1],
+        end[2],
+        i_val,
+        j_val,
+        0.0,
+        0.0,
+        0.0,
+        -1.0 if cw else 1.0,
+    ]
+    vis_segs = linearize_arc(arc_row, st.current_pos)
     if st.current_power > 0.0:
         n_segs = len(vis_segs)
         for seg_start, seg_end in vis_segs:
@@ -920,32 +616,14 @@ def _handle_bezier_to(
 ) -> None:
     end = ops.endpoint(idx)
     c1, c2 = ops.bezier_params(idx)
-    if st.has_mapped_data and st.is_rotary:
-        mu_end, mu_c1, mu_c2 = _reconstruct_mu_bezier(
-            ops, idx, acc.diameter, acc.reverse
-        )
-        polyline = linearize_bezier_segment(
-            st.current_pos,
-            mu_c1,
-            mu_c2,
-            mu_end,
-        )
-        vis_poly = [
-            _mu_to_visual(
-                pt,
-                acc.diameter,
-                acc.reverse,
-            )
-            for pt in polyline
-        ]
-    else:
-        polyline = linearize_bezier_segment(
+    vis_poly = list(
+        linearize_bezier_segment(
             st.current_pos,
             c1,
             c2,
             end,
         )
-        vis_poly = list(polyline)
+    )
     if st.current_power > 0.0:
         for j in range(len(vis_poly) - 1):
             acc.pv.extend(vis_poly[j])
@@ -968,7 +646,7 @@ def _handle_scanline(
     ops: Ops,
     idx: int,
 ) -> None:
-    vis_end = _visual_end(ops, idx)
+    vis_end = ops.endpoint(idx)
     _extract_zero_power_segments(
         ops,
         idx,
@@ -1001,10 +679,7 @@ def compile_scene(
 ) -> CompiledSceneArtifact:
     total_cmds = ops.len()
 
-    accumulators: dict[bool, _LayerAccumulator] = {
-        False: _LayerAccumulator(total_cmds, is_rotary=False),
-        True: _LayerAccumulator(total_cmds, is_rotary=True),
-    }
+    acc = _LayerAccumulator(total_cmds)
 
     st = _WalkState()
 
@@ -1012,17 +687,13 @@ def compile_scene(
         if cancel_check is not None and cancel_check():
             raise RuntimeError("Cancelled")
 
-        acc = accumulators[st.is_rotary]
         ct = ops.command_type(i)
 
         if ct == CommandType.LAYER_START:
-            acc = _handle_layer_start(
+            _handle_layer_start(
                 st,
-                acc,
                 ops,
                 i,
-                config,
-                accumulators,
             )
         elif ct == CommandType.LAYER_END:
             _handle_layer_end(st, acc, i)
@@ -1041,10 +712,9 @@ def compile_scene(
         elif ct == CommandType.SCAN_LINE:
             _handle_scanline(st, acc, ops, i)
 
-        for a in accumulators.values():
-            a.record_offset(i)
+        acc.record_offset(i)
 
-    vertex_layers, overlay_layers = _finalize_layers(accumulators, config)
+    vertex_layers, overlay_layers = _finalize_layers(acc, config)
 
     texture_layers = _generate_texture_layers(ops, st.layer_infos, config)
 

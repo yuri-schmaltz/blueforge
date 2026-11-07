@@ -25,18 +25,9 @@ machine:
       - 50
       letter: Z
       resolution: 0.01
-    - axis_type: rotary
-      direction: normal
-      extents:
-      - 0
-      - 360
-      letter: A
-      resolution: 0.01
-      rotary_diameter: 25.0
   axis_extents:
   - 140.0
   - 140.0
-  cameras: []
   clear_alarm_on_connect: false
   coordinate_systems:
   - name: G54
@@ -69,7 +60,6 @@ machine:
     - 0.0
     - 0.0
     - 0.0
-  default_rotary_module_uid: bc50197d-9f95-44c2-be99-18f66026e5b1
   dialect_uid: 9d88d7d1-6853-4e81-a139-cfb4b6abb3cc
   driver: NoDeviceDriver
   driver_args: {}
@@ -144,35 +134,6 @@ machine:
   reverse_x_axis: false
   reverse_y_axis: false
   reverse_z_axis: false
-  rotary_enabled_default: false
-  rotary_modules:
-  - axis: A
-    axis_position:
-    - -33.0
-    - -4.0
-    - 25.0
-    default_diameter: 25.0
-    max_workpiece_length: 60.0
-    mode: true_4th_axis
-    model_path: creality-roller.glb
-    name: Creality Roller
-    rotary_type: jaws
-    transform:
-    - 410.0
-    - 0.0
-    - 0.0
-    - 72.0
-    - 0.0
-    - 410.0
-    - 0.0
-    - 71.0
-    - -0.0
-    - 0.0
-    - 410.0
-    - 10.0
-    - 0.0
-    - 0.0
-    - 0.0
     - 1.0
     uid: bc50197d-9f95-44c2-be99-18f66026e5b1
   single_axis_homing_enabled: true

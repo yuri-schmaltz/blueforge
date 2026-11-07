@@ -30,7 +30,7 @@ class LBDevImportDialog(Adw.MessageDialog):
                 "settings. The imported profile may be incomplete. "
                 "After import, please review and configure any "
                 "additional settings such as laser heads, homing, "
-                "end stops, G-code dialect, macros, and rotary "
+                "end stops, G-code dialect and macros "
                 "modules."
             ),
             **kwargs,

@@ -5,12 +5,11 @@ from .compiled_scene import (
     TextureLayer,
     VertexLayer,
 )
-from .render_config import LayerRenderConfig, RenderConfig3D
+from .render_config import RenderConfig3D
 from .scene_compiler import compile_scene
 from .scene_compiler_runner import compile_scene_in_thread
 
 __all__ = [
-    "LayerRenderConfig",
     "RenderConfig3D",
     "CompiledSceneArtifact",
     "CompiledSceneArtifactHandle",

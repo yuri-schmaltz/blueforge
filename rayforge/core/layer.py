@@ -6,7 +6,6 @@ workpieces within a document.
 from __future__ import annotations
 
 import logging
-import math
 from gettext import gettext as _
 from typing import (
     Any,
@@ -53,9 +52,6 @@ class Layer(DocItem):
         """
         super().__init__(name=name)
         self.visible: bool = True
-        self.rotary_enabled: bool = False
-        self.rotary_diameter: float = 25.0
-        self.rotary_module_uid: Optional[str] = None
         self.color: str = self.DEFAULT_COLOR
         self.wcs: Optional[str] = None
 
@@ -78,9 +74,6 @@ class Layer(DocItem):
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "visible": self.visible,
-            "rotary_enabled": self.rotary_enabled,
-            "rotary_diameter": self.rotary_diameter,
-            "rotary_module_uid": self.rotary_module_uid,
             "color": self.color,
             "wcs": self.wcs,
             "children": [child.to_dict() for child in self.children],
@@ -97,9 +90,6 @@ class Layer(DocItem):
             "name",
             "matrix",
             "visible",
-            "rotary_enabled",
-            "rotary_diameter",
-            "rotary_module_uid",
             "color",
             "wcs",
             "children",
@@ -110,9 +100,6 @@ class Layer(DocItem):
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
         layer.visible = data.get("visible", True)
-        layer.rotary_enabled = data.get("rotary_enabled", False)
-        layer.rotary_diameter = data.get("rotary_diameter", 25.0)
-        layer.rotary_module_uid = data.get("rotary_module_uid")
         layer.color = data.get("color", cls.DEFAULT_COLOR)
         layer.wcs = data.get("wcs")
         layer.extra = extra
@@ -254,49 +241,15 @@ class Layer(DocItem):
         self.visible = visible
         self.updated.send(self)
 
-    def set_rotary_enabled(self, enabled: bool):
-        """Enable or disable rotary attachment mode."""
-        if self.rotary_enabled == enabled:
-            return
-        self.rotary_enabled = enabled
-        self.updated.send(self)
-
-    def set_rotary_diameter(self, diameter: float):
-        """Set the diameter of the object on the rotary attachment."""
-        if self.rotary_diameter == diameter:
-            return
-        self.rotary_diameter = diameter
-        self.updated.send(self)
-
-    def set_rotary_module_uid(self, uid: Optional[str]):
-        if self.rotary_module_uid == uid:
-            return
-        self.rotary_module_uid = uid
-        self.updated.send(self)
-
     def set_color(self, color: str):
         if self.color == color:
             return
         self.color = color
         self.updated.send(self)
 
-    def get_subtitle(self, rotary_module_name: Optional[str] = None) -> str:
-        """Returns a subtitle describing the layer type.
-
-        Args:
-            rotary_module_name: The name of the selected rotary module,
-                if any. The caller is responsible for resolving the
-                layer's ``rotary_module_uid`` to a name.
-
-        Returns:
-            A human-readable subtitle string (e.g. ``"Flat"`` or
-            ``"Rotary · Chuck Rotary"``).
-        """
-        if not self.rotary_enabled:
-            return _("Flat")
-        if rotary_module_name:
-            return _("Rotary · {name}").format(name=rotary_module_name)
-        return _("Rotary")
+    def get_subtitle(self) -> str:
+        """Returns a subtitle describing the layer type."""
+        return _("Flat")
 
     def set_wcs(self, wcs: Optional[str]):
         if self.wcs == wcs:
@@ -307,13 +260,6 @@ class Layer(DocItem):
     def get_effective_wcs(self, machine) -> str:
         """Return this layer's WCS or the machine's active WCS."""
         return self.wcs if self.wcs else machine.active_wcs
-
-    def mu_to_degrees(self, mu: float) -> float:
-        """Convert machine units to degrees for rotary axis."""
-        if self.rotary_diameter <= 0:
-            return 0.0
-        circumference = self.rotary_diameter * math.pi
-        return (mu / circumference) * 360.0
 
     def add_workpiece(self, workpiece: "WorkPiece"):
         """Adds a single workpiece to the layer."""

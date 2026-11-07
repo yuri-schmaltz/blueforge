@@ -26,7 +26,6 @@ from .hooks_macros_page import HooksMacrosPage
 from .laser_preferences_page import LaserPreferencesPage
 from .maintenance_page import MaintenancePage
 from .nogo_zones_page import NogoZonesPage
-from .rotary_module_page import RotaryModulePage
 
 logger = logging.getLogger(__name__)
 
@@ -179,12 +178,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
         laser_page = LaserPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(laser_page, "laser", _("Laser"))
 
-        # --- Page 8: Rotary Module ---
-        rotary_module_page = RotaryModulePage(machine=self.machine)
-        self.content_stack.add_titled(
-            rotary_module_page, "rotary-module", _("Rotary Module")
-        )
-
         # --- Page 9: No-Go Zones ---
         nogo_zones_page = NogoZonesPage(machine=self.machine)
         self.content_stack.add_titled(
@@ -221,9 +214,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self._add_sidebar_row(_("Device"), "settings-symbolic", "device")
         self._add_sidebar_row(_("Laser"), "laser-on-symbolic", "laser")
-        self._add_sidebar_row(
-            _("Rotary Module"), "rotary-symbolic", "rotary-module"
-        )
         self._add_sidebar_row(
             _("No-Go Zones"), "action-unavailable-symbolic", "nogo-zones"
         )

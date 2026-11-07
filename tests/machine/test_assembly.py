@@ -1,5 +1,3 @@
-import math
-
 import pytest
 from raygeo.ops.axis import Axis
 
@@ -47,47 +45,6 @@ def _three_axis_assembly():
     )
 
 
-def _rotary_assembly(diameter=50.0):
-    asm = Assembly(
-        [
-            Link("base", parent=None, joint_type=JointType.FIXED),
-            Link(
-                "gantry_x",
-                parent="base",
-                joint_type=JointType.PRISMATIC,
-                joint_axis=(1.0, 0.0, 0.0),
-                driver_axis=Axis.X,
-            ),
-            Link(
-                "gantry_y",
-                parent="gantry_x",
-                joint_type=JointType.PRISMATIC,
-                joint_axis=(0.0, 1.0, 0.0),
-                driver_axis=Axis.Y,
-            ),
-            Link(
-                "laser_head",
-                parent="gantry_y",
-                joint_type=JointType.PRISMATIC,
-                joint_axis=(0.0, 0.0, 1.0),
-                driver_axis=Axis.Z,
-                role=LinkRole.HEAD,
-            ),
-            Link("rotary_base", parent="base", joint_type=JointType.FIXED),
-            Link(
-                "rotary_chuck",
-                parent="rotary_base",
-                joint_type=JointType.REVOLUTE,
-                joint_axis=(1.0, 0.0, 0.0),
-                driver_axis=Axis.Y,
-                role=LinkRole.CHUCK,
-            ),
-        ]
-    )
-    asm.set_rotary_diameter(diameter)
-    return asm
-
-
 class TestThreeAxis:
     def test_head_positions_origin(self):
         asm = _three_axis_assembly()
@@ -100,16 +57,6 @@ class TestThreeAxis:
         state = _make_state(x=10.0, y=20.0, z=5.0)
         heads = asm.head_positions(state)
         assert heads == {"laser_head": (10.0, 20.0, 5.0)}
-
-    def test_no_rotary(self):
-        asm = _three_axis_assembly()
-        assert not asm.has_rotary
-        assert asm.rotary_diameter is None
-
-    def test_chuck_angles_empty(self):
-        asm = _three_axis_assembly()
-        angles = asm.chuck_angles(_make_state(y=100.0))
-        assert angles == {}
 
     def test_forward_kinematics_returns_all_links(self):
         asm = _three_axis_assembly()
@@ -124,31 +71,6 @@ class TestThreeAxis:
         pos, orient = poses["laser_head"]
         assert pos == (1.0, 2.0, 3.0)
         assert orient.shape == (3, 3)
-
-
-class TestRotary:
-    def test_has_rotary(self):
-        asm = _rotary_assembly()
-        assert asm.has_rotary
-        assert asm.rotary_diameter == 50.0
-
-    def test_chuck_angles_quarter_turn(self):
-        asm = _rotary_assembly(50.0)
-        state = _make_state(y=90.0)
-        angles = asm.chuck_angles(state)
-        assert abs(angles["rotary_chuck"] - math.pi / 2) < 1e-9
-
-    def test_head_positions_same_as_cartesian(self):
-        asm = _rotary_assembly()
-        state = _make_state(x=5.0, y=10.0, z=3.0)
-        heads = asm.head_positions(state)
-        assert heads == {"laser_head": (5.0, 10.0, 3.0)}
-
-    def test_chuck_angles_zero_at_origin(self):
-        asm = _rotary_assembly()
-        state = _make_state()
-        angles = asm.chuck_angles(state)
-        assert angles["rotary_chuck"] == 0.0
 
 
 class TestMultipleHeads:
@@ -214,62 +136,6 @@ class TestMultipleHeads:
         assert len(head_links) == 2
         names = {link.name for link in head_links}
         assert names == {"head_a", "head_b"}
-        chuck_links = asm.get_links_by_role(LinkRole.CHUCK)
-        assert chuck_links == []
-
-
-class TestMultipleChucks:
-    def test_two_chucks(self):
-        asm = Assembly(
-            [
-                Link("base", parent=None, joint_type=JointType.FIXED),
-                Link(
-                    "head",
-                    parent="base",
-                    joint_type=JointType.PRISMATIC,
-                    joint_axis=(1.0, 0.0, 0.0),
-                    driver_axis=Axis.X,
-                    role=LinkRole.HEAD,
-                ),
-                Link(
-                    "chuck_a",
-                    parent="base",
-                    joint_type=JointType.REVOLUTE,
-                    joint_axis=(1.0, 0.0, 0.0),
-                    driver_axis=Axis.Y,
-                    role=LinkRole.CHUCK,
-                ),
-                Link(
-                    "chuck_b",
-                    parent="base",
-                    joint_type=JointType.REVOLUTE,
-                    joint_axis=(0.0, 1.0, 0.0),
-                    driver_axis=Axis.A,
-                    role=LinkRole.CHUCK,
-                ),
-            ]
-        )
-        asm.set_rotary_diameter(25.0)
-        state = _make_state(y=360.0, a=180.0)
-        angles = asm.chuck_angles(state)
-        assert abs(angles["chuck_a"] - 2 * math.pi) < 1e-9
-        assert abs(angles["chuck_b"] - math.pi) < 1e-9
-
-    def test_get_links_by_role_chuck(self):
-        asm = _rotary_assembly()
-        chucks = asm.get_links_by_role(LinkRole.CHUCK)
-        assert len(chucks) == 1
-        assert chucks[0].name == "rotary_chuck"
-
-    def test_get_link_existing(self):
-        asm = _three_axis_assembly()
-        link = asm.get_link("gantry_y")
-        assert link is not None
-        assert link.name == "gantry_y"
-
-    def test_get_link_missing_returns_none(self):
-        asm = _three_axis_assembly()
-        assert asm.get_link("nonexistent") is None
 
 
 class TestNoRole:

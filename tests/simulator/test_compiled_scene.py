@@ -21,16 +21,12 @@ def _make_vertex_layer(n_powered=10, n_travel=5, n_zero=3):
     )
 
 
-def _make_texture_layer(with_cylinder=True):
-    kw = {}
-    if with_cylinder:
-        kw["cylinder_vertices"] = np.random.rand(64, 3).astype(np.float32)
+def _make_texture_layer():
     return TextureLayer(
         power_texture=np.random.randint(0, 255, (32, 48), dtype=np.uint8),
         width_px=48,
         height_px=32,
         model_matrix=np.eye(4, dtype=np.float32),
-        **kw,
     )
 
 
@@ -89,13 +85,13 @@ class TestCompiledSceneArtifactRoundTrip:
 
         store.release(handle)
 
-    def test_texture_layers_with_optionals(self):
+    def test_texture_layers(self):
         artifact = CompiledSceneArtifact(
             generation_id=1,
             vertex_layers=[],
             texture_layers=[
-                _make_texture_layer(with_cylinder=True),
-                _make_texture_layer(with_cylinder=False),
+                _make_texture_layer(),
+                _make_texture_layer(),
             ],
             overlay_layers=[],
         )
@@ -107,13 +103,9 @@ class TestCompiledSceneArtifactRoundTrip:
         tl0 = loaded.texture_layers[0]
         assert tl0.width_px == 48
         assert tl0.height_px == 32
-        assert tl0.cylinder_vertices is not None
         np.testing.assert_array_equal(
             artifact.texture_layers[0].power_texture, tl0.power_texture
         )
-
-        tl1 = loaded.texture_layers[1]
-        assert tl1.cylinder_vertices is None
 
         store.release(handle)
 

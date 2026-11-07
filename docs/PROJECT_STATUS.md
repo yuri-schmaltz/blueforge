@@ -1,9 +1,25 @@
-# Project status — 2026-11-06
+# Project status — 2026-11-07
 
-This review applies to the local changes based on commit `5fb9f59f` in
+This review applies to the local changes based on commit `8303ecb5` in
 [yuri-schmaltz/blueforge](https://github.com/yuri-schmaltz/blueforge).
 The application is Blueforge, with executable `blueforge` and Python
 namespace `rayforge`. The project license is MIT.
+
+## Product scope
+
+Blueforge is a laser-engraving-only application. The following features
+were removed because they are not part of the engraving workflow:
+
+| Removed | What went with it |
+| --- | --- |
+| Anonymous usage telemetry | Umami client, consent dialog, all `track_page_view` call sites, the Privacy preferences group |
+| Print & Cut addon | The whole `rayforge-addon-print-and-cut` builtin addon (1,273 LOC) |
+| Camera integration | Camera manager, V4L2 controller, ChArUco calibration, ten UI dialogs, the canvas element, the settings page and the `<Ctrl><Alt>c` action |
+| Rotary axis support | Rotary module model and settings page, `ROTARY` axis type, kinematic mapping/math helpers, chuck and cylinder machinery, cylinder renderer, rotary layer attachment |
+
+The 3D simulator now compiles every layer into a single flat vertex layer.
+The machine and device profiles no longer carry `rotary_modules` or
+`rotary_enabled_default` keys.
 
 ## Priorities addressed
 
@@ -37,7 +53,7 @@ Local results:
 
 | Check | Result |
 | --- | --- |
-| Backend suite with coverage | 5,155 passed; 41.33% coverage (35% gate) |
+| Backend suite with coverage | 4,928 passed; 35% coverage gate |
 | Complete UI suite | 298 passed |
 | Stress suite | 22 passed |
 | Property-based tests | 8 properties, 100 iterations each; all passed |

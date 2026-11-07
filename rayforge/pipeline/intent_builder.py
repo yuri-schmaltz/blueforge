@@ -51,7 +51,6 @@ from typing import (
     Tuple,
 )
 
-import numpy as np
 
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
@@ -61,7 +60,6 @@ from raygeo.cnc.execution.specs import (
     MachineParams,
     MachineTransformSpec,
     Marker,
-    RotaryMappingSpec,
 )
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
@@ -76,9 +74,7 @@ from raygeo.pipeline.stage import StageSpec
 
 from ..machine.driver import get_driver_cls
 from ..machine.driver.dummy import NoDeviceDriver
-from ..machine.kinematic_math import KinematicMath
 from ..machine.models.dialect import GRBL_DIALECT
-from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .coordspace import MachineSpace
 from .encoder.base import EncodedOutput
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
@@ -258,8 +254,7 @@ class IntentBuilder:
 
         This node consumes the job aggregate's world-space Ops and
         produces machine-space Ops by applying curve linearization,
-        rotary axis mapping, world→machine coordinate transforms,
-        WCS offsets, Z-flip, and AXIS_REPLACEMENT downstream.
+        world→machine coordinate transforms, WCS offsets and Z-flip.
         The encoder then reads from this node instead of directly
         from the job aggregate.
         """
@@ -828,10 +823,10 @@ class IntentBuilder:
         """Build the :class:`MachineTransformSpec` for the machine-
         transform pipeline node.
 
-        Collects the world→machine matrix, WCS offsets, and per-layer
-        rotary mapping config from the machine and document and
-        packages them into a serialisable spec that the Rust
-        ``MachineTransformCompute`` stage consumes.
+        Collects the world→machine matrix and the WCS offsets from
+        the machine and document and packages them into a
+        serialisable spec that the Rust ``MachineTransformCompute``
+        stage consumes.
         """
         machine = self._machine
         assert machine is not None
@@ -860,9 +855,6 @@ class IntentBuilder:
             )
             layer_wcs_offsets.append((layer.uid, list(cmd_offset)))
 
-        # Per-layer rotary mappings.
-        rotary_mappings = self._build_rotary_mappings(doc, machine)
-
         return MachineTransformSpec(
             source_key=job_key(),
             linearize_curves=not machine.supports_curves,
@@ -870,65 +862,11 @@ class IntentBuilder:
             default_wcs_offset=default_wcs_offset,
             layer_wcs_offsets=layer_wcs_offsets,
             reverse_z=machine.reverse_z_axis,
-            rotary_mappings=rotary_mappings,
+            # ``rotary_mappings`` is a required argument of the external
+            # ``raygeo`` spec. Blueforge has no rotary support, so the
+            # list is always empty.
+            rotary_mappings=[],
         )
-
-    @staticmethod
-    def _build_rotary_mappings(
-        doc: "Doc",
-        machine: "Machine",
-    ) -> list:
-        """Build per-layer :class:`RotaryMappingSpec` entries."""
-        mappings: list = []
-        for layer in doc.layers:
-            if not layer.rotary_module_uid or not layer.rotary_enabled:
-                continue
-            module = machine.rotary_modules.get(layer.rotary_module_uid or "")
-            if module is None:
-                continue
-
-            diameter = layer.rotary_diameter
-            gear_ratio = KinematicMath.gear_ratio(
-                module.rotary_type == RotaryType.ROLLERS,
-                diameter,
-                module.roller_diameter,
-            )
-
-            # Extract axis position and cylinder direction.
-            rot3 = module.transform[:3, :3].astype(np.float64).copy()
-            for col in range(3):
-                norm = np.linalg.norm(rot3[:, col])
-                if norm > 1e-12:
-                    rot3[:, col] /= norm
-
-            mod_pos = module.transform[:3, 3].astype(np.float64)
-            axis_position_3d = mod_pos + rot3 @ module.axis_position
-            cylinder_dir = rot3[:, 0].copy()
-            norm = np.linalg.norm(cylinder_dir)
-            if norm > 1e-12:
-                cylinder_dir /= norm
-
-            if module.mode == RotaryMode.TRUE_4TH_AXIS:
-                rotary_axis = module.axis.name
-                replaced_axis = None
-            else:
-                rotary_axis = "Y"
-                replaced_axis = module.axis.name
-
-            mappings.append(
-                RotaryMappingSpec(
-                    layer_uid=layer.uid,
-                    diameter=diameter,
-                    gear_ratio=gear_ratio,
-                    reverse=module.reverse_axis,
-                    axis_position_3d=axis_position_3d.tolist(),
-                    cylinder_dir=cylinder_dir.tolist(),
-                    rotary_axis=rotary_axis,
-                    replaced_axis=replaced_axis,
-                    mu_per_rotation=module.mu_per_rotation,
-                )
-            )
-        return mappings
 
     def _make_python_encoder_callable(
         self, machine: "Machine", doc: "Doc"
@@ -937,8 +875,8 @@ class IntentBuilder:
         invokes the driver-specific encoder directly on
         machine-space ops.
 
-        The pre-processing transforms (linearization, rotary mapping,
-        world→machine, WCS offset, Z-flip, AXIS_REPLACEMENT) are
+        The pre-processing transforms (linearization,
+        world→machine, WCS offset, Z-flip) are
         handled by the upstream machine-transform stage, so this
         callable only applies the final driver encoding step.
         """
@@ -991,8 +929,8 @@ class IntentBuilder:
         """Compute the version token for the machine-transform node.
 
         Folds in the job aggregate's token plus the machine identity
-        (supports_curves, reverse_z, WCS config, rotary module config)
-        so any change to the machine or job invalidates the cache.
+        (supports_curves, reverse_z, WCS config) so any change to the
+        machine or job invalidates the cache.
         """
         payload = {
             "kind": "machine_transform",
@@ -1139,22 +1077,6 @@ def _machine_transform_config_payload(
     payload: Dict[str, Any] = {
         "wcs_origin_is_workarea_origin": machine.wcs_origin_is_workarea_origin,
     }
-    # Rotary module UIDs per layer (to detect rotary config changes).
-    for layer in doc.layers:
-        uid = layer.uid
-        if layer.rotary_module_uid and layer.rotary_enabled:
-            module = machine.rotary_modules.get(layer.rotary_module_uid)
-            if module is not None:
-                payload[f"rotary:{uid}"] = {
-                    "module_uid": module.uid,
-                    "mode": module.mode.value,
-                    "axis": module.axis.name,
-                    "mu_per_rotation": module.mu_per_rotation,
-                    "diameter": layer.rotary_diameter,
-                    "roller_diameter": module.roller_diameter,
-                    "rotary_type": module.rotary_type.value,
-                    "reverse_axis": module.reverse_axis,
-                }
     return payload
 
 

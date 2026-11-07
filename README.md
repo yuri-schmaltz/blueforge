@@ -40,7 +40,6 @@ offering a full suite of tools for both hobbyists and professionals.
 | :---------------------------- | :--------------------------------------------------------------------------------------------------- |
 | **Versatile Operations**      | Supports Contour, Raster Engraving (with cross-hatch fill), Shrink Wrap, Depth Engraving, and Frame. |
 | **2.5D Cutting**              | Multi-pass cuts with configurable step-down for thick materials.                                     |
-| **True 4th Axis Support**     | Full rotary axis support - as 4th axis, or axis replacement mode for hobby machines.                 |
 | **Animated 3D Simulation**    | Simulate toolpaths in 3D with animated playback, scrubber, and speed control.                        |
 | **Holding Tabs**              | Add tabs to contour cuts. Supports manual and automatic placement.                                   |
 | **Overscan & Kerf Comp.**     | Improve engraving quality with overscan; ensure dimensional accuracy with kerf compensation.         |

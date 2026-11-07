@@ -159,7 +159,7 @@ jobs:
               MISSING=$((MISSING + 1))
             fi
             # Built-in addon .mo files
-            for addon in laser post print-and-cut sketcher; do
+            for addon in laser post sketcher; do
               addon_name=$(ls "$TMPDIR/data/usr/lib/python3/dist-packages/rayforge/builtin_addons/" 2>/dev/null | grep "rayforge-addon-${addon}\$" | head -1)
               [ -z "$addon_name" ] && continue
               if ! find "$TMPDIR/data" -path "*/${addon_name}/locale/${LANG}/LC_MESSAGES/*.mo" | grep -q .; then

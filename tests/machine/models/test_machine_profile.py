@@ -158,14 +158,3 @@ async def test_builtin_devices_all_load():
                 driver_cls = get_driver_cls(pkg.machine_config.driver)
                 if driver_cls.uses_gcode:
                     assert pkg.dialect_config
-
-
-@pytest.mark.asyncio
-async def test_device_without_rotary_modules(
-    context_initializer: "RayforgeContext",
-):
-    """Devices without rotary_modules create machines with none."""
-    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
-    machine = pkg.create_machine(context_initializer)
-    tasker.task_mgr.wait_until_settled(5000)
-    assert machine.rotary_modules == {}

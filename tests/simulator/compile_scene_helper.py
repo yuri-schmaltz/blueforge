@@ -2,33 +2,12 @@
 
 import numpy as np
 
-from rayforge.simulator.scene3d.render_config import (
-    LayerRenderConfig,
-    RenderConfig3D,
-)
+from rayforge.simulator.scene3d.render_config import RenderConfig3D
 
 
-def make_test_config(
-    layer_configs=None,
-):
+def make_test_config():
     return RenderConfig3D(
         world_to_visual=np.eye(4, dtype=np.float32),
-        world_to_cyl_local=np.eye(4, dtype=np.float32),
-        layer_configs=layer_configs,
-    )
-
-
-def make_flat_layer_config():
-    return LayerRenderConfig(
-        rotary_enabled=False,
-        rotary_diameter=0.0,
-    )
-
-
-def make_rotary_layer_config(diameter=50.0):
-    return LayerRenderConfig(
-        rotary_enabled=True,
-        rotary_diameter=diameter,
     )
 
 

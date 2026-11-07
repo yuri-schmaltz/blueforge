@@ -13,15 +13,12 @@ MachineController, so this module focuses on the data model aspects.
 import gc
 
 import pytest
-from raygeo.ops.axis import Axis
 
 from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
-from rayforge.core.doc import Doc
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.machine.transport import TransportStatus
 
 
@@ -459,18 +456,6 @@ class TestMachineModel:
         machine2 = Machine.from_dict(data, context=lite_context)
         assert machine2.axis_extents == (500, 600)
         assert machine2.work_margins == (100, 150, 100, 100)
-
-
-@pytest.fixture
-def rotary_doc(isolated_machine):
-    doc = Doc()
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_diameter(25.0)
-    rm = RotaryModule()
-    rm.set_axis(Axis.A)
-    isolated_machine.add_rotary_module(rm)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
-    return doc
 
 
 @pytest.mark.usefixtures("lite_context")

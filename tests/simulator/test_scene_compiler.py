@@ -2,8 +2,6 @@ import numpy as np
 import pytest
 from compile_scene_helper import (
     make_assembled_ops,
-    make_flat_layer_config,
-    make_rotary_layer_config,
     make_test_config,
 )
 from raygeo.ops import Ops
@@ -12,13 +10,7 @@ from rayforge.simulator.scene3d.scene_compiler import compile_scene
 
 
 def _flat_config():
-    return make_test_config(layer_configs={"layer1": make_flat_layer_config()})
-
-
-def _rotary_config(diameter=50.0):
-    return make_test_config(
-        layer_configs={"layer1": make_rotary_layer_config(diameter=diameter)}
-    )
+    return make_test_config()
 
 
 def _single_layer_ops(step_ops, layer_uid="layer1"):
@@ -39,7 +31,6 @@ class TestCompileLineTo:
 
         assert len(artifact.vertex_layers) == 1
         vl = artifact.vertex_layers[0]
-        assert not vl.is_rotary
         pv = vl.powered_verts.reshape(-1, 3)
         assert pv.shape[0] == 2
         np.testing.assert_allclose(pv[0], [1.0, 2.0, 0.0])
@@ -60,7 +51,6 @@ class TestCompileLineTo:
 
         assert len(artifact.vertex_layers) == 1
         vl = artifact.vertex_layers[0]
-        assert not vl.is_rotary
         tv = vl.travel_verts.reshape(-1, 3)
         assert tv.shape[0] == 2
         np.testing.assert_allclose(tv[0], [1.0, 0.0, 0.01])
@@ -85,7 +75,6 @@ class TestCompileScanline:
 
         assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
-        assert not ol.is_rotary
         ov_pos = ol.positions.reshape(-1, 3)
         assert ov_pos.shape[0] == 2
 
@@ -105,29 +94,6 @@ class TestCompileScanline:
         ov_pow = ol.power_values
         assert ov_pow.shape[0] == 2
         assert all(p > 0 for p in ov_pow)
-
-
-class TestCompileRotary:
-    def test_rotary_cylinder_wrapping(self):
-        ops = Ops()
-        ops.move_to(0.0, 0.0, 0.0)
-        ops.set_power(1.0)
-        ops.line_to(10.0, 0.0, 0.0)
-
-        diameter = 50.0
-        assembled = _single_layer_ops(ops)
-        config = _rotary_config(diameter=diameter)
-
-        artifact = compile_scene(assembled, config)
-
-        assert len(artifact.vertex_layers) == 1
-        vl = artifact.vertex_layers[0]
-        assert vl.is_rotary
-        pv = vl.powered_verts.reshape(-1, 3)
-        assert pv.shape[0] == 2
-
-        assert abs(pv[0, 1]) < 1e-5
-        assert abs(pv[0, 2] - diameter / 2) < 1e-3
 
 
 class TestCompileCancel:
@@ -171,41 +137,33 @@ class TestCompileEmpty:
 
 
 class TestCompileMultiLayer:
-    def test_flat_and_rotary_separated(self):
-        ops_flat = Ops()
-        ops_flat.move_to(0.0, 0.0, 0.0)
-        ops_flat.set_power(1.0)
-        ops_flat.line_to(5.0, 0.0, 0.0)
+    def test_layers_merge_into_single_vertex_layer(self):
+        ops_a = Ops()
+        ops_a.move_to(0.0, 0.0, 0.0)
+        ops_a.set_power(1.0)
+        ops_a.line_to(5.0, 0.0, 0.0)
 
-        ops_rot = Ops()
-        ops_rot.move_to(0.0, 0.0, 0.0)
-        ops_rot.set_power(1.0)
-        ops_rot.line_to(5.0, 0.0, 0.0)
+        ops_b = Ops()
+        ops_b.move_to(0.0, 0.0, 0.0)
+        ops_b.set_power(1.0)
+        ops_b.line_to(5.0, 0.0, 0.0)
 
         assembled = make_assembled_ops(
             [
-                ("flat_layer", ops_flat),
-                ("rot_layer", ops_rot),
+                ("layer_a", ops_a),
+                ("layer_b", ops_b),
             ]
         )
-        config = make_test_config(
-            layer_configs={
-                "flat_layer": make_flat_layer_config(),
-                "rot_layer": make_rotary_layer_config(diameter=50.0),
-            }
-        )
+        config = make_test_config()
 
         artifact = compile_scene(assembled, config)
 
-        assert len(artifact.vertex_layers) == 2
+        assert len(artifact.vertex_layers) == 1
 
-        flat_vl = [vl for vl in artifact.vertex_layers if not vl.is_rotary][0]
-        pv_flat = flat_vl.powered_verts.reshape(-1, 3)
-        assert pv_flat[0, 2] == 0.0
-
-        rot_vl = [vl for vl in artifact.vertex_layers if vl.is_rotary][0]
-        pv_rot = rot_vl.powered_verts.reshape(-1, 3)
-        assert abs(pv_rot[0, 2] - 25.0) < 1e-3
+        vl = artifact.vertex_layers[0]
+        pv = vl.powered_verts.reshape(-1, 3)
+        assert pv.shape[0] == 4
+        assert pv[0, 2] == 0.0
 
 
 class TestPoweredOffsets:
@@ -244,12 +202,7 @@ class TestPoweredOffsets:
                 ("layer2", ops2),
             ]
         )
-        config = make_test_config(
-            layer_configs={
-                "layer1": make_flat_layer_config(),
-                "layer2": make_flat_layer_config(),
-            }
-        )
+        config = make_test_config()
 
         artifact = compile_scene(assembled, config)
 
@@ -350,12 +303,7 @@ class TestOverlayOffsets:
                 ("layer2", ops2),
             ]
         )
-        config = make_test_config(
-            layer_configs={
-                "layer1": make_flat_layer_config(),
-                "layer2": make_flat_layer_config(),
-            }
-        )
+        config = make_test_config()
 
         artifact = compile_scene(assembled, config)
 

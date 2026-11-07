@@ -10,6 +10,37 @@ prior to the fork, see the Rayforge repository.
 
 ## [Unreleased]
 
+### Removed
+
+Blueforge is now a laser-engraving-only application. Four peripheral
+features that are unrelated to engraving have been removed entirely,
+along with their UI, models, assets, translations and tests.
+
+- **Anonymous usage telemetry** — the Umami client (`rayforge/usage.py`),
+  the usage-consent dialog and every `track_page_view` call site are gone.
+  The Privacy preferences group and the "Report Anonymous Usage" switch
+  were removed with it, so the application no longer contacts any
+  third-party analytics endpoint.
+- **Print & Cut addon** — the `rayforge-addon-print-and-cut` builtin addon
+  (1,273 LOC) was deleted. It was self-contained and nothing else in the
+  tree referenced it.
+- **Camera integration** — the `rayforge/camera` package (manager, V4L2
+  controller, camera model and ChArUco calibration), the ten camera
+  dialogs and widgets under `rayforge/ui_gtk/camera/`, the camera canvas
+  element, the `toggle_camera_view` action and its `<Ctrl><Alt>c`
+  shortcut, the camera settings page and the camera fields in the machine
+  model, the device profile and the LightBurn importer are gone.
+- **Rotary axis support** — the rotary module model and its settings page,
+  the `ROTARY` axis type and rotary diameter on the axis configuration,
+  the kinematic-mapping and kinematic-math helpers, the chuck/cylinder
+  machinery in the assembly and kinematics layers, the rotary mappings in
+  the pipeline intent builder, the cylinder renderer and the cylinder
+  coordinate helpers used by the 3D scene compiler, the rotary layer
+  attachment group in the layer settings dialog, and the
+  `rotary_modules` / `rotary_enabled_default` keys in the machine and
+  device profiles were all removed. The 3D simulator now compiles every
+  layer into a single flat vertex layer.
+
 ### Fixed
 
 - Connect CAD geometry controls to undoable editor commands and synchronize

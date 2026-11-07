@@ -17,7 +17,6 @@ from blinker import Signal
 
 from ..core.doc import Doc
 from ..core.workpiece import WorkPiece
-from ..machine.kinematic_mapping import KinematicMapping
 from .artifact import (
     BaseArtifactHandle,
     JobArtifact,
@@ -343,19 +342,6 @@ class Pipeline:
         distance = ops.distance() if ops else 0.0
 
         mapped_ops = None
-        if (
-            ops
-            and self._doc
-            and self._machine
-            and self._machine.rotary_modules
-        ):
-            mapped_ops = ops.copy()
-            KinematicMapping.apply_to_job_ops(
-                mapped_ops,
-                self._doc,
-                self._machine,
-                apply_gear_ratio=False,
-            )
 
         artifact = JobArtifact(
             ops=ops,

@@ -7,7 +7,6 @@ from raygeo.ops.axis import Axis
 
 class AxisType(Enum):
     LINEAR = "linear"
-    ROTARY = "rotary"
 
 
 class AxisDirection(Enum):
@@ -23,7 +22,6 @@ class AxisConfig:
     direction: AxisDirection = AxisDirection.NORMAL
     gcode_letter: Optional[str] = None
     resolution: float = 0.01
-    rotary_diameter: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         result: Dict[str, Any] = {
@@ -35,8 +33,6 @@ class AxisConfig:
         }
         if self.gcode_letter is not None:
             result["gcode_letter"] = self.gcode_letter
-        if self.rotary_diameter is not None:
-            result["rotary_diameter"] = self.rotary_diameter
         return result
 
     @classmethod
@@ -50,7 +46,6 @@ class AxisConfig:
             ),
             gcode_letter=data.get("gcode_letter"),
             resolution=data.get("resolution", 0.01),
-            rotary_diameter=data.get("rotary_diameter"),
         )
 
 
@@ -62,9 +57,6 @@ class AxisSet:
     def _rebuild_filters(self) -> None:
         self.linear_axes = [
             c for c in self.configs if c.axis_type == AxisType.LINEAR
-        ]
-        self.rotary_axes = [
-            c for c in self.configs if c.axis_type == AxisType.ROTARY
         ]
 
     def add_config(self, config: AxisConfig) -> None:
@@ -98,7 +90,6 @@ class AxisSet:
         reverse_x: bool,
         reverse_y: bool,
         reverse_z: bool,
-        rotary_modules=None,
     ) -> "AxisSet":
         width, height = axis_extents
         configs: List[AxisConfig] = [
@@ -133,14 +124,4 @@ class AxisSet:
                 ),
             ),
         ]
-        if rotary_modules:
-            for module in rotary_modules.values():
-                configs.append(
-                    AxisConfig(
-                        letter=module.axis,
-                        axis_type=AxisType.ROTARY,
-                        extents=(0, 360),
-                        rotary_diameter=module.default_diameter,
-                    )
-                )
         return cls(configs)

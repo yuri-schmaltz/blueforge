@@ -41,14 +41,13 @@ class JobArtifact(BaseArtifact):
     for machine execution.
 
     Coordinate conventions:
-        ops: Raw assembled operations in world-space coordinates. No
-            rotary mapping applied. Used as input to Machine.encode_ops()
-            which handles the full transform pipeline (rotary mapping +
-            world→machine + WCS + Z-flip) internally.
-        mapped_ops: Same operations with rotary axis mapping applied
-            (Y→degrees for rotary layers). Suitable for 3D preview and
-            playback (scene compiler, OpPlayer). Not suitable for G-code
-            encoding (lacks machine-coordinate transforms).
+        ops: Raw assembled operations in world-space coordinates. Used as
+            input to Machine.encode_ops(), which handles the full
+            transform pipeline (world→machine + WCS + Z-flip) internally.
+        mapped_ops: Same operations in machine coordinates. Suitable for
+            3D preview and playback (scene compiler, OpPlayer). Not
+            suitable for G-code encoding (lacks the encoder's own
+            machine-coordinate transforms).
     """
 
     def __init__(

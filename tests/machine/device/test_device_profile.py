@@ -622,11 +622,9 @@ class TestExportMachine:
         machine.home_on_start = False
         machine.acceleration = None
         machine.single_axis_homing_enabled = None
-        machine.rotary_enabled_default = False
         machine.work_margins = (0, 0, 0, 0)
         machine.soft_limits = None
         machine.heads = []
-        machine.rotary_modules = {}
         machine.hookmacros = {}
         machine.nogo_zones = {}
         machine.dialect = GcodeDialect.from_dict({"label": name})

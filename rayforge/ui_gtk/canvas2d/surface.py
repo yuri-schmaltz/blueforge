@@ -1,5 +1,4 @@
 import logging
-import math
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -680,12 +679,6 @@ class WorkSurface(WorldSurface):
 
     def _on_wcs_updated(self, machine: Machine):
         """Handles updates to the machine's WCS state."""
-        if self._is_rotary_active():
-            self._work_origin_element.set_visible(False)
-            self._update_extent_frame()
-            self.queue_draw()
-            return
-
         space = machine.get_coordinate_space()
         if machine.wcs_origin_is_workarea_origin:
             canvas_x, canvas_y = space.get_workarea_origin_in_machine()
@@ -697,14 +690,6 @@ class WorkSurface(WorldSurface):
         self._work_origin_element.set_visible(True)
         self._update_extent_frame()
         self.queue_draw()
-
-    def _is_rotary_active(self):
-        """Returns True if the active layer has rotary mode enabled."""
-        return (
-            self.doc is not None
-            and self.doc.active_layer is not None
-            and self.doc.active_layer.rotary_enabled
-        )
 
     def _get_active_layer_wcs_offset(self):
         """
@@ -1229,9 +1214,6 @@ class WorkSurface(WorldSurface):
 
         super().reset_view()
 
-        if self.doc.active_layer.rotary_enabled and self.machine:
-            self._center_on_rotary_axis()
-
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_nogo_zone_elements()
@@ -1242,27 +1224,19 @@ class WorkSurface(WorldSurface):
         """
         Updates the machine extent frame and workarea background.
 
-        In flat mode, the workarea background shows the usable area
-        within the machine bed (margins excluded). In rotary mode,
-        the workarea background represents the unrolled cylinder
-        surface, centered vertically on the WCS origin.
+        The workarea background shows the usable area within the
+        machine bed (margins excluded).
         """
         if not self.machine:
             self._extent_frame_element.set_visible(False)
             self._workarea_bg_element.set_visible(False)
             return
 
-        active_layer = self.doc.active_layer
-
-        if active_layer.rotary_enabled:
-            self._update_extent_frame_rotary()
-        else:
-            self._update_extent_frame_flat()
-
+        self._update_extent_frame_flat()
         self.queue_draw()
 
     def _update_extent_frame_flat(self):
-        """Updates extent frame and workarea for flat (non-rotary) mode."""
+        """Updates extent frame and workarea for the flat bed."""
         assert self.machine
         extent_w, extent_h = self.machine.axis_extents
         ml, mt, mr, mb = self.machine.work_margins
@@ -1291,63 +1265,6 @@ class WorkSurface(WorldSurface):
         )
         self._workarea_bg_element.set_pos(float(ml), float(mb))
         self._workarea_bg_element.set_visible(True)
-
-    def _update_extent_frame_rotary(self):
-        """Updates extent frame and workarea for rotary mode."""
-        assert self.machine
-        active_layer = self.doc.active_layer
-        diameter = active_layer.rotary_diameter
-        circumference = math.pi * diameter
-        half_circ = circumference / 2.0
-
-        origin_x, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
-
-        bed_width = self.machine.axis_extents[0]
-        max_length = bed_width
-        default_rm = self.machine.get_default_rotary_module()
-        if default_rm:
-            max_length = min(max_length, default_rm.max_workpiece_length)
-
-        if self.machine.x_axis_right:
-            width = min(origin_x, max_length)
-            x = origin_x - width
-        else:
-            x = origin_x
-            width = min(bed_width - origin_x, max_length)
-
-        y = origin_y - half_circ
-        height = circumference
-
-        if width < 0:
-            width = 0.0
-        if height < 0:
-            height = 0.0
-
-        logger.debug(
-            f"_update_extent_frame_rotary: diameter={diameter}, "
-            f"circ={circumference:.2f}, pos=({x:.2f}, {y:.2f}), "
-            f"size=({width:.2f}, {height:.2f})"
-        )
-
-        self._axis_renderer.set_x_axis_y_override(origin_y)
-
-        margin_right = self.width_mm - x - width
-        margin_top = self.height_mm - y - height
-        self._axis_renderer.set_margins_mm(x, margin_top, margin_right, y)
-
-        self._extent_frame_element.set_size(width, height)
-        self._extent_frame_element.set_pos(x, y)
-        self._extent_frame_element.set_visible(width > 0)
-
-        self._workarea_bg_element.set_size(width, height)
-        self._workarea_bg_element.set_pos(x, y)
-        self._workarea_bg_element.set_visible(width > 0)
-
-    def _center_on_rotary_axis(self):
-        """Adjusts pan to vertically center the view on the cylinder X axis."""
-        assert self.machine
-        _, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
-        self.set_pan(self.pan_x_mm, origin_y - self.height_mm / 2.0)
 
     def _sync_nogo_zone_elements(self):
         if not self.machine:

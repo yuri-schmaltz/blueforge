@@ -172,14 +172,10 @@ def test_from_axis_set():
             AxisConfig(
                 Axis.Z, AxisType.LINEAR, (-50, 50), AxisDirection.NORMAL
             ),
-            AxisConfig(
-                Axis.A, AxisType.ROTARY, (0, 3600), AxisDirection.NORMAL
-            ),
         ]
     )
     state = MachineState.from_axis_set(axis_set)
-    assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z, Axis.A}
-    assert state.axes[Axis.A] == 0.0
+    assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z}
 
 
 def test_extra_axes_applied():

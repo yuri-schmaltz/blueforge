@@ -29,7 +29,6 @@ class JointType(Enum):
 
 class LinkRole(Enum):
     HEAD = "head"
-    CHUCK = "chuck"
 
 
 @dataclass
@@ -96,8 +95,6 @@ class Assembly:
         self._validate_no_cycles()
 
         self._roles: Dict[LinkRole, List[str]] = {}
-        self._chuck_diameters: Dict[str, float] = {}
-        self._chuck_axis_offsets: Dict[str, np.ndarray] = {}
         self._index_roles()
 
     def _validate_no_cycles(self) -> None:
@@ -129,42 +126,6 @@ class Assembly:
                 continue
             self._roles.setdefault(link.role, []).append(link.name)
 
-    def set_chuck_diameter(self, chuck_name: str, diameter: float) -> None:
-        self._chuck_diameters[chuck_name] = diameter
-
-    def set_chuck_axis_offset(
-        self, chuck_name: str, offset: np.ndarray
-    ) -> None:
-        self._chuck_axis_offsets[chuck_name] = offset.copy()
-
-    @property
-    def chuck_axis_offset(self) -> np.ndarray:
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return np.zeros(3, dtype=np.float64)
-        return self._chuck_axis_offsets.get(
-            chuck_names[0], np.zeros(3, dtype=np.float64)
-        )
-
-    def set_rotary_diameter(self, diameter: float) -> None:
-        for name in self._roles.get(LinkRole.CHUCK, []):
-            self._chuck_diameters[name] = diameter
-
-    @property
-    def chuck_diameters(self) -> Dict[str, float]:
-        return dict(self._chuck_diameters)
-
-    @property
-    def has_rotary(self) -> bool:
-        return bool(self._roles.get(LinkRole.CHUCK))
-
-    @property
-    def rotary_diameter(self) -> Optional[float]:
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return None
-        return self._chuck_diameters.get(chuck_names[0])
-
     def get_link(self, name: str) -> Optional[Link]:
         return self._link_map.get(name)
 
@@ -184,19 +145,16 @@ class Assembly:
         """Return a 4x4 world transform for each link with a 3D model.
 
         For prismatic joints, the transform includes the animated axis
-        offset so models move with the gantry.  For revolute joints the
-        transform is the static base pose (the joint rotation is
-        typically visualized separately by a cylinder renderer).
+        offset so models move with the gantry.
 
         The link's ``model_transform`` is applied on top of the base
         pose and carries scale, rotation and offsets that are purely
         visual (e.g. focal-distance offset for laser heads).
 
-        *wcs_offset* is applied in Z to non-rotary links (heads) so
-        models sit at the correct work-coordinate height.
+        *wcs_offset* is applied in Z so models sit at the correct
+        work-coordinate height.
         """
         fk = self.forward_kinematics(state)
-        chuck_names = set(self._roles.get(LinkRole.CHUCK, []))
         transforms: Dict[str, np.ndarray] = {}
         for link in self._links:
             if link.model is None:
@@ -221,184 +179,9 @@ class Assembly:
                 base[:3, :3] = rot
                 base[:3, 3] = [pos[0], pos[1], pos[2]]
             t = base @ link.model_transform
-            if link.name not in chuck_names:
-                t[2, 3] += wcs_offset[2]
+            t[2, 3] += wcs_offset[2]
             transforms[link.name] = t
         return transforms
-
-    def cylinder_base_transform(self) -> np.ndarray:
-        """Return the static 4x4 cylinder base pose (no spin).
-
-        Derives position and orientation from the rotary_base link's
-        local_transform (= module.transform), with scale stripped and
-        the stored chuck axis_offset applied.  Independent of machine
-        state — the rotary_base is a FIXED child of the root.
-
-        Returns:
-            4x4 affine matrix (float64), rotation-only (no scale).
-        """
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return np.eye(4, dtype=np.float64)
-        link = self._link_map.get(chuck_names[0])
-        if link is None:
-            return np.eye(4, dtype=np.float64)
-        parent = self._link_map.get(link.parent) if link.parent else None
-        if parent is not None:
-            base = parent.local_transform.copy()
-        else:
-            base = link.local_transform.copy()
-
-        rot3 = base[:3, :3].copy()
-        for col in range(3):
-            norm = np.linalg.norm(rot3[:, col])
-            if norm > 1e-12:
-                rot3[:, col] /= norm
-
-        axis_offset = self.chuck_axis_offset
-        result = np.eye(4, dtype=np.float64)
-        result[:3, :3] = rot3
-        result[:3, 3] = base[:3, 3] + rot3 @ axis_offset
-        return result
-
-    @property
-    def cylinder_axis_index(self) -> int:
-        """Index (0=X, 1=Y) of the cylinder axis in world frame.
-
-        Derived from the rotary_base link's rotation matrix: the
-        column corresponding to the chuck's driver axis gives the
-        world-space cylinder direction.
-        """
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return 0
-        chuck = self._link_map[chuck_names[0]]
-        parent = self._link_map.get(chuck.parent) if chuck.parent else None
-        if parent is not None:
-            base = parent.local_transform
-        else:
-            base = chuck.local_transform
-        rot3 = base[:3, :3].copy()
-        for col in range(3):
-            norm = np.linalg.norm(rot3[:, col])
-            if norm > 1e-12:
-                rot3[:, col] /= norm
-        world_dir = rot3[:, 0]
-        if abs(world_dir[1]) > abs(world_dir[0]):
-            return 1
-        return 0
-
-    def head_rotary_positions(
-        self,
-        state: "MachineState",
-        diameter: float,
-        focal_distance: float = 0.0,
-    ) -> Dict[str, np.ndarray]:
-        """Return head positions above the cylinder surface.
-
-        Positions each HEAD link at the top of the cylinder at the
-        correct along-cylinder offset, plus *focal_distance* above
-        the surface.  Uses the static cylinder base pose (no spin).
-
-        Args:
-            state: Machine state (for FK head positions).
-            diameter: Cylinder diameter.
-            focal_distance: Height above the cylinder surface.
-
-        Returns:
-            Dict of {head_name: 3D world position (float64 array)}.
-        """
-        head_names = self._roles.get(LinkRole.HEAD, [])
-        if not head_names:
-            return {}
-
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return {}
-
-        radius = diameter / 2.0 if diameter > 0 else 0.0
-
-        cyl_t = self.cylinder_base_transform()
-
-        fk_heads = self.head_positions(state)
-
-        result: Dict[str, np.ndarray] = {}
-        for name in head_names:
-            if name not in fk_heads:
-                continue
-            hx, hy, hz = fk_heads[name]
-
-            local = np.array(
-                [
-                    hx,
-                    0.0,
-                    radius + focal_distance + hz,
-                    1.0,
-                ],
-                dtype=np.float64,
-            )
-            world = cyl_t @ local
-            result[name] = world[:3].copy()
-        return result
-
-    def cylinder_world_transform(
-        self,
-        state: "MachineState",
-        axis_offset: np.ndarray,
-    ) -> np.ndarray:
-        """Return the 4x4 world transform for the rotary cylinder.
-
-        The cylinder is a child of the chuck link in the kinematic
-        chain.  The transform includes:
-
-        1. Chuck base pose from FK (position + orientation, no scale)
-        2. Axis offset in the chuck's local frame
-        3. Revolute joint spin from the machine state
-
-        Args:
-            state: Current machine state (for FK + revolute angle).
-            axis_offset: 3D offset from the module's mounting position.
-
-        Returns:
-            4x4 affine matrix (float64), rotation-only (no scale).
-        """
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return np.eye(4, dtype=np.float64)
-        link = self._link_map.get(chuck_names[0])
-        if link is None:
-            return np.eye(4, dtype=np.float64)
-        fk = self.forward_kinematics(state)
-        parent = self._link_map.get(link.parent) if link.parent else None
-        if parent is not None and parent.name in fk:
-            pos_p, rot_p = fk[parent.name]
-            parent_t = np.eye(4, dtype=np.float64)
-            parent_t[:3, :3] = rot_p
-            parent_t[:3, 3] = [pos_p[0], pos_p[1], pos_p[2]]
-            base = parent_t @ link.local_transform
-        else:
-            base = link.local_transform.copy()
-
-        result = np.eye(4, dtype=np.float64)
-        rot3 = base[:3, :3].copy()
-        for col in range(3):
-            norm = np.linalg.norm(rot3[:, col])
-            if norm > 1e-12:
-                rot3[:, col] /= norm
-        result[:3, :3] = rot3
-        result[:3, 3] = base[:3, 3] + rot3 @ axis_offset
-
-        if (
-            link.driver_axis is not None
-            and link.joint_type == JointType.REVOLUTE
-        ):
-            angle = state.axes.get(link.driver_axis, 0.0)
-            angle_rad = math.radians(angle)
-            axis = np.array(link.joint_axis, dtype=np.float64)
-            rot = _rotation_matrix_4x4(axis, angle_rad)
-            result = result @ rot
-
-        return result
 
     def forward_kinematics(
         self, state: "MachineState"
@@ -463,18 +246,6 @@ class Assembly:
             )
             for name in head_names
         }
-
-    def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
-        chuck_names = self._roles.get(LinkRole.CHUCK, [])
-        if not chuck_names:
-            return {}
-        result: Dict[str, float] = {}
-        for name in chuck_names:
-            chuck = self._link_map[name]
-            assert chuck.driver_axis is not None
-            angle = state.axes.get(chuck.driver_axis, 0.0)
-            result[name] = math.radians(angle)
-        return result
 
 
 def _rotation_matrix_4x4(axis: np.ndarray, angle: float) -> np.ndarray:

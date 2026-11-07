@@ -18,7 +18,6 @@ class VertexLayer:
     zero_power_verts: np.ndarray
     powered_cmd_offsets: list = field(default_factory=list)
     travel_cmd_offsets: list = field(default_factory=list)
-    is_rotary: bool = False
 
 
 @dataclass
@@ -27,9 +26,6 @@ class TextureLayer:
     width_px: int
     height_px: int
     model_matrix: np.ndarray
-    cylinder_vertices: Optional[np.ndarray] = None
-    rotary_diameter: float = 0.0
-    rotary_enabled: bool = False
     activation_cmd_idx: int = -1
     laser_uid: str = ""
 
@@ -40,7 +36,6 @@ class ScanlineOverlayLayer:
     power_values: np.ndarray
     laser_indices: np.ndarray
     cmd_offsets: list
-    is_rotary: bool = False
 
 
 class CompiledSceneArtifactHandle(BaseArtifactHandle):

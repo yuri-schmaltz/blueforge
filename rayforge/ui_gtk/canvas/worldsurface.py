@@ -277,7 +277,6 @@ class WorldSurface(Canvas):
         )
 
         # Base scale to map mm to the unzoomed content area pixels
-        # Use effective height to handle rotary mode correctly
         effective_height = self._axis_renderer.get_effective_height()
         scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
         scale_y = content_h / effective_height if effective_height > 0 else 1

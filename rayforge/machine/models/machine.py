@@ -12,7 +12,6 @@ from raygeo.geo.types import Point3D, Rect
 from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext, get_context
-from ...core.layer import Layer
 from ...core.model import Model
 from ...pipeline.coordspace import MachineSpace
 from ...shared.tasker import task_mgr
@@ -26,7 +25,6 @@ from .dialect import GcodeDialect
 from .laser import Laser
 from .machine_hours import MachineHours
 from .macro import Macro, MacroTrigger
-from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
 
 if TYPE_CHECKING:
@@ -141,8 +139,6 @@ class Machine:
         )
         self._soft_limits: Optional[Rect] = None
         self.origin: Origin = Origin.BOTTOM_LEFT
-        self.rotary_enabled_default: bool = False
-        self.default_rotary_module_uid: Optional[str] = None
         self.soft_limits_enabled: bool = True
         self.wcs_origin_is_workarea_origin: bool = False
         self._settings_lock = asyncio.Lock()
@@ -167,13 +163,10 @@ class Machine:
 
         self.add_head(Laser())
 
-        self.rotary_modules: Dict[str, RotaryModule] = {}
         self.nogo_zones: Dict[str, Zone] = {}
 
         self._assembly: Optional["Assembly"] = None
         self._assembly_dirty: bool = True
-        self._mounted_rotaries: List[RotaryModule] = []
-        self._layer_configured: bool = False
 
     @property
     def controller(self) -> "MachineController":
@@ -291,35 +284,7 @@ class Machine:
     def invalidate_assembly(self):
         self._assembly_dirty = True
 
-    def configure_for_layer(self, layer: Optional["Layer"]) -> None:
-        required_rotaries: List[RotaryModule] = []
-        if layer and layer.rotary_enabled and layer.rotary_module_uid:
-            module = self.rotary_modules.get(layer.rotary_module_uid)
-            if module:
-                required_rotaries.append(module)
-        if self._assembly_needs_rebuild(required_rotaries):
-            self._mounted_rotaries = required_rotaries
-            self._layer_configured = True
-            self._assembly_dirty = True
-
-    def _assembly_needs_rebuild(
-        self,
-        rotaries: List[RotaryModule],
-    ) -> bool:
-        if self._assembly_dirty:
-            return True
-        if len(rotaries) != len(self._mounted_rotaries):
-            return True
-        current_uids = {r.uid for r in self._mounted_rotaries}
-        new_uids = {r.uid for r in rotaries}
-        if current_uids != new_uids:
-            return True
-        return False
-
     def _build_assembly(self) -> Assembly:
-        rotaries = self._mounted_rotaries
-        if not rotaries and not self._layer_configured and self.rotary_modules:
-            rotaries = list(self.rotary_modules.values())[:1]
         head_specs: List[HeadSpec] = []
         for h in self.heads:
             t = h.transform.copy()
@@ -329,14 +294,9 @@ class Machine:
                 Model.from_path(Path(h.model_path)) if h.model_path else None
             )
             head_specs.append((model, t))
-        rotary_modules_for_build: Dict[str, RotaryModule] = {}
-        if rotaries:
-            for r in rotaries:
-                rotary_modules_for_build[r.uid] = r
         return build_assembly(
             axis_set=self.axes,
             head_specs=head_specs,
-            rotary_modules=rotary_modules_for_build or None,
         )
 
     @property
@@ -698,18 +658,6 @@ class Machine:
             )
         self.changed.send(self)
 
-    def set_rotary_enabled_default(self, enabled: bool):
-        if self.rotary_enabled_default == enabled:
-            return
-        self.rotary_enabled_default = enabled
-        self.changed.send(self)
-
-    def set_default_rotary_module_uid(self, uid: Optional[str]):
-        if self.default_rotary_module_uid == uid:
-            return
-        self.default_rotary_module_uid = uid
-        self.changed.send(self)
-
     def set_wcs_origin_is_workarea_origin(self, value: bool):
         """Sets if the workarea origin should be treated as coordinate zero."""
         if self.wcs_origin_is_workarea_origin == value:
@@ -930,85 +878,6 @@ class Machine:
     def _on_head_changed(self, head, *args):
         self.invalidate_assembly()
         self.changed.send(self)
-
-    def add_rotary_module(self, module: RotaryModule):
-        self.rotary_modules[module.uid] = module
-        module.changed.connect(self._on_rotary_module_changed)
-        self._sync_rotary_axis_config(module)
-        self.invalidate_assembly()
-        self.changed.send(self)
-
-    def get_rotary_module_by_uid(self, uid: str) -> Optional[RotaryModule]:
-        return self.rotary_modules.get(uid)
-
-    def get_default_rotary_module(self) -> Optional[RotaryModule]:
-        if self.default_rotary_module_uid:
-            return self.get_rotary_module_by_uid(
-                self.default_rotary_module_uid
-            )
-        return None
-
-    def get_rotary_axis_for_layer(self, layer: "Layer") -> Optional[Axis]:
-        if not layer.rotary_enabled or not layer.rotary_module_uid:
-            return None
-        module = self.rotary_modules.get(layer.rotary_module_uid)
-        return module.axis if module else None
-
-    def remove_rotary_module(self, module: RotaryModule):
-        module.changed.disconnect(self._on_rotary_module_changed)
-        del self.rotary_modules[module.uid]
-        if self._manages_axis_config(module):
-            self.axes.remove_config(module.axis)
-        if self.default_rotary_module_uid == module.uid:
-            remaining = list(self.rotary_modules.keys())
-            self.default_rotary_module_uid = (
-                remaining[0] if remaining else None
-            )
-        self._mounted_rotaries = [
-            r for r in self._mounted_rotaries if r.uid != module.uid
-        ]
-        self.invalidate_assembly()
-        self.changed.send(self)
-
-    def _on_rotary_module_changed(self, module, *args):
-        self._sync_rotary_axis_config(module)
-        self.invalidate_assembly()
-        self.changed.send(self)
-
-    @staticmethod
-    def _manages_axis_config(module: RotaryModule) -> bool:
-        return module.mode == RotaryMode.TRUE_4TH_AXIS and module.axis in {
-            Axis.A,
-            Axis.B,
-            Axis.C,
-            Axis.U,
-        }
-
-    def _sync_rotary_axis_config(self, module: RotaryModule) -> None:
-        if not self._manages_axis_config(module):
-            return
-        existing = self.axes.get(module.axis)
-        if existing is None:
-            self.axes.add_config(
-                AxisConfig(
-                    letter=module.axis,
-                    axis_type=AxisType.ROTARY,
-                    extents=(0, 360),
-                    rotary_diameter=module.default_diameter,
-                )
-            )
-        elif existing.axis_type != AxisType.ROTARY:
-            self.axes.remove_config(module.axis)
-            self.axes.add_config(
-                AxisConfig(
-                    letter=module.axis,
-                    axis_type=AxisType.ROTARY,
-                    extents=(0, 360),
-                    rotary_diameter=module.default_diameter,
-                )
-            )
-        else:
-            existing.rotary_diameter = module.default_diameter
 
     def add_nogo_zone(self, zone: Zone):
         self.nogo_zones[zone.uid] = zone
@@ -1325,15 +1194,10 @@ class Machine:
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
                 "reverse_z_axis": self.reverse_z_axis,
-                "rotary_enabled_default": self.rotary_enabled_default,
-                "default_rotary_module_uid": (self.default_rotary_module_uid),
                 "wcs_origin_is_workarea_origin": (
                     self.wcs_origin_is_workarea_origin
                 ),
                 "heads": [head.to_dict() for head in self.heads],
-                "rotary_modules": [
-                    rm.to_dict() for rm in self.rotary_modules.values()
-                ],
                 "nogo_zones": [z.to_dict() for z in self.nogo_zones.values()],
                 "hookmacros": {
                     trigger.name: macro.to_dict()
@@ -1503,7 +1367,6 @@ class Machine:
                 reverse_x=legacy_reverse_x,
                 reverse_y=legacy_reverse_y,
                 reverse_z=legacy_reverse_z,
-                rotary_modules=ma.rotary_modules,
             )
 
         if "work_margins" in ma_data:
@@ -1524,11 +1387,6 @@ class Machine:
                 if ma_data.get("y_axis_down", False) is False
                 else Origin.TOP_LEFT
             )
-
-        ma.rotary_enabled_default = ma_data.get(
-            "rotary_enabled_default", False
-        )
-        ma.default_rotary_module_uid = ma_data.get("default_rotary_module_uid")
 
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
@@ -1556,8 +1414,6 @@ class Machine:
         ma.heads = []
         for obj in ma_data.get("heads", {}):
             ma.add_head(Laser.from_dict(obj))
-        for obj in ma_data.get("rotary_modules", []):
-            ma.add_rotary_module(RotaryModule.from_dict(obj))
         for obj in ma_data.get("nogo_zones", []):
             ma.add_nogo_zone(Zone.from_dict(obj))
         speeds = ma_data.get("speeds", {})

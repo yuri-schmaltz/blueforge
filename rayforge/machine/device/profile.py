@@ -14,7 +14,6 @@ from ...machine.models.dialect import GcodeDialect
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine, Origin
 from ...machine.models.macro import Macro, MacroTrigger
-from ...machine.models.rotary_module import RotaryModule
 from ...machine.models.zone import Zone
 
 if TYPE_CHECKING:
@@ -147,12 +146,6 @@ def _validate_machine_config(config: Dict[str, Any], manifest_path: Path):
         if not isinstance(config["hookmacros"], list):
             raise ValueError(f"'hookmacros' must be a list in {manifest_path}")
 
-    if "rotary_modules" in config:
-        if not isinstance(config["rotary_modules"], list):
-            raise ValueError(
-                f"'rotary_modules' must be a list in {manifest_path}"
-            )
-
     if "nogo_zones" in config:
         if not isinstance(config["nogo_zones"], list):
             raise ValueError(f"'nogo_zones' must be a list in {manifest_path}")
@@ -169,9 +162,6 @@ def _resolve_and_copy_models(
 
     for head_data in machine_section.get("heads", []):
         _copy_model_ref(head_data, models_dir, model_mgr, copied)
-
-    for rm_data in machine_section.get("rotary_modules", []):
-        _copy_model_ref(rm_data, models_dir, model_mgr, copied)
 
 
 def _copy_model_ref(
@@ -211,10 +201,8 @@ class MachineConfig:
     home_on_start: Optional[bool] = None
     acceleration: Optional[int] = None
     single_axis_homing_enabled: Optional[bool] = None
-    rotary_enabled_default: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
-    rotary_modules: Optional[List[Dict[str, Any]]] = None
     nogo_zones: Optional[List[Dict[str, Any]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -239,14 +227,6 @@ class MachineConfig:
                 d = head.to_dict()
                 d.pop("uid", None)
                 heads.append(d)
-
-        rotary_modules = None
-        if machine.rotary_modules:
-            rotary_modules = []
-            for rm in machine.rotary_modules.values():
-                d = rm.to_dict()
-                d.pop("uid", None)
-                rotary_modules.append(d)
 
         hookmacros = None
         if machine.hookmacros:
@@ -284,10 +264,8 @@ class MachineConfig:
             home_on_start=machine.home_on_start,
             acceleration=machine.acceleration,
             single_axis_homing_enabled=(machine.single_axis_homing_enabled),
-            rotary_enabled_default=machine.rotary_enabled_default,
             heads=heads,
             hookmacros=hookmacros,
-            rotary_modules=rotary_modules,
             nogo_zones=nogo_zones,
         )
 
@@ -424,9 +402,6 @@ class DeviceProfile:
             m.acceleration = cfg.acceleration
         if cfg.single_axis_homing_enabled is not None:
             m.single_axis_homing_enabled = cfg.single_axis_homing_enabled
-        if cfg.rotary_enabled_default is not None:
-            m.rotary_enabled_default = cfg.rotary_enabled_default
-
         if cfg.hookmacros is not None:
             for s_data in cfg.hookmacros:
                 try:
@@ -440,10 +415,6 @@ class DeviceProfile:
                 m.remove_head(head)
             for head_data in cfg.heads:
                 m.add_head(Laser.from_dict(head_data))
-
-        if cfg.rotary_modules is not None:
-            for rm_data in cfg.rotary_modules:
-                m.add_rotary_module(RotaryModule.from_dict(rm_data))
 
         if cfg.nogo_zones is not None:
             for z_data in cfg.nogo_zones:
