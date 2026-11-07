@@ -353,7 +353,7 @@ def engrave_step_class(context_initializer):
 def lite_context(tmp_path, task_mgr, monkeypatch):
     """
     A lightweight context fixture for tests that only need the
-    MachineManager without cameras, materials, recipes, or addons.
+    MachineManager without materials, recipes, or addons.
     Much faster than the full context_initializer.
     """
     from rayforge import config

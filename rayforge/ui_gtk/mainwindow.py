@@ -367,7 +367,6 @@ class MainWindow(Adw.ApplicationWindow):
             editor=self.doc_editor,
             parent_window=self,
             machine=config.machine,
-            cam_visible=True,  # Will be set by action state
         )
         self.surface.set_hexpand(True)
 
@@ -444,10 +443,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface_overlay.set_child(self.surface)
         self._surface_vis_overlay = VisibilityOverlay(
             show_workpiece=True,
-            show_camera=bool(
-                config.machine
-                and any(c.enabled for c in config.machine.cameras)
-            ),
             show_tabs=True,
             shortcuts=SHORTCUTS,
         )
@@ -1195,16 +1190,6 @@ class MainWindow(Adw.ApplicationWindow):
         config.canvas_view.show_workpieces = is_visible
         config.changed.send(config)
 
-    def on_toggle_camera_view_state_change(
-        self, action: Gio.SimpleAction, value: GLib.Variant
-    ):
-        is_visible = value.get_boolean()
-        self.surface.set_camera_image_visibility(is_visible)
-        action.set_state(value)
-        config = get_context().config
-        config.canvas_view.show_camera = is_visible
-        config.changed.send(config)
-
     def on_toggle_travel_view_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
@@ -1303,14 +1288,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.on_show_workpieces_state_change(
             am.get_action("show_workpieces"),
             GLib.Variant.new_boolean(cv.show_workpieces),
-        )
-
-        am.get_action("toggle_camera_view").set_state(
-            GLib.Variant.new_boolean(not cv.show_camera)
-        )
-        self.on_toggle_camera_view_state_change(
-            am.get_action("toggle_camera_view"),
-            GLib.Variant.new_boolean(cv.show_camera),
         )
 
         am.get_action("toggle_travel_view").set_state(
@@ -1920,12 +1897,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update the main WorkSurface to use the new size
         self.surface.set_machine(config.machine)
-
-        # Show/hide camera toggle based on whether machine has cameras
-        has_cameras = bool(
-            config.machine and any(c.enabled for c in config.machine.cameras)
-        )
-        self._surface_vis_overlay.set_camera_visible(has_cameras)
 
         self.surface.update_from_doc()
         self._update_macros_menu()

@@ -44,8 +44,6 @@ The following are **excluded** by the dump logic:
 
 - **API keys** for AI providers, OctoPrint, etc. (these are stored
   in the system keyring, not the config file).
-- **Camera captures** (these can contain sensitive data; the user
-  should manually attach them if needed).
 - **Other users' files** (the bundle only includes files from
   the current user's config directory).
 - **The system clipboard** contents.

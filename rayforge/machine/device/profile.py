@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import yaml
 
-from ...camera.models.camera import Camera
-from ...camera.v4l import migrate_camera_data
 from ...core.model import Model
 from ...machine.driver import get_driver_cls
 from ...machine.models.dialect import GcodeDialect
@@ -159,10 +157,6 @@ def _validate_machine_config(config: Dict[str, Any], manifest_path: Path):
         if not isinstance(config["nogo_zones"], list):
             raise ValueError(f"'nogo_zones' must be a list in {manifest_path}")
 
-    if "cameras" in config:
-        if not isinstance(config["cameras"], list):
-            raise ValueError(f"'cameras' must be a list in {manifest_path}")
-
 
 def _resolve_and_copy_models(
     device_data: dict,
@@ -222,7 +216,6 @@ class MachineConfig:
     hookmacros: Optional[List[Dict[str, Any]]] = None
     rotary_modules: Optional[List[Dict[str, Any]]] = None
     nogo_zones: Optional[List[Dict[str, Any]]] = None
-    cameras: Optional[List[Dict[str, Any]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         result: Dict[str, Any] = {}
@@ -267,10 +260,6 @@ class MachineConfig:
         if machine.nogo_zones:
             nogo_zones = [z.to_dict() for z in machine.nogo_zones.values()]
 
-        cameras = None
-        if machine.cameras:
-            cameras = [c.to_dict() for c in machine.cameras]
-
         work_margins = None
         if machine.work_margins != (0, 0, 0, 0):
             work_margins = machine.work_margins
@@ -300,7 +289,6 @@ class MachineConfig:
             hookmacros=hookmacros,
             rotary_modules=rotary_modules,
             nogo_zones=nogo_zones,
-            cameras=cameras,
         )
 
 
@@ -446,11 +434,6 @@ class DeviceProfile:
                     m.hookmacros[trigger] = Macro.from_dict(s_data)
                 except (KeyError, ValueError) as e:
                     logger.warning(f"Skipping invalid hook in device: {e}")
-
-        m.cameras = []
-        if cfg.cameras is not None:
-            for cam_data in cfg.cameras:
-                m.add_camera(Camera.from_dict(migrate_camera_data(cam_data)))
 
         if cfg.heads is not None:
             for head in m.heads[:]:

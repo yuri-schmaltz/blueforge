@@ -7,8 +7,6 @@ from typing import Optional
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ... import const
-from ...camera.models import Camera
-from ...camera.v4l import display_name
 from ...context import get_context
 from ...machine.driver import (
     DRIVER_MATURITY_LABELS,
@@ -16,7 +14,6 @@ from ...machine.driver import (
     get_driver_cls,
 )
 from ...machine.models.machine import Machine
-from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.patched_dialog_window import PatchedDialogWindow
@@ -194,16 +191,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
             nogo_zones_page, "nogo-zones", _("No-Go Zones")
         )
 
-        # --- Page 10: Camera ---
-        self.camera_page = CameraPreferencesPage()
-        self.camera_page.camera_add_requested.connect(
-            self._on_camera_add_requested
-        )
-        self.camera_page.camera_remove_requested.connect(
-            self._on_camera_remove_requested
-        )
-        self.content_stack.add_titled(self.camera_page, "camera", _("Camera"))
-
         # --- Page 9: Maintenance ---
         maintenance_page = MaintenancePage(machine=self.machine)
         self.content_stack.add_titled(
@@ -240,7 +227,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._add_sidebar_row(
             _("No-Go Zones"), "action-unavailable-symbolic", "nogo-zones"
         )
-        self._add_sidebar_row(_("Camera"), "camera-on-symbolic", "camera")
         self._add_sidebar_row(
             _("Maintenance"), "timer-symbolic", "maintenance"
         )
@@ -248,17 +234,10 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # Connect sidebar selection
         self.sidebar_list.connect("row-selected", self._on_row_selected)
 
-        # Sync UI with CameraManager signals
-        camera_mgr = get_context().camera_mgr
-        camera_mgr.controller_added.connect(self._sync_camera_page)
-        camera_mgr.controller_removed.connect(self._sync_camera_page)
-        self.connect("destroy", self._on_destroy)
-
         # React to driver changes (e.g. show/hide G-code page)
         self.machine.changed.connect(self._on_machine_changed)
 
         # Initial population of all dependent pages
-        self._sync_camera_page()
         self._update_gcode_page_visibility()
         self._update_maturity_banner()
 
@@ -376,42 +355,6 @@ class MachineSettingsDialog(PatchedDialogWindow):
         """
         self.toast_overlay.add_toast(Adw.Toast(title=message, timeout=5))
 
-    def _on_camera_add_requested(self, sender, *, device_id: str):
-        """Handles the request to add a new camera to the machine."""
-        if any(c.device_id == device_id for c in self.machine.cameras):
-            return  # Safety check
-
-        new_camera = Camera(
-            display_name(device_id),
-            device_id,
-        )
-        new_camera.enabled = True
-        self.machine.add_camera(new_camera)
-        # The machine.changed signal will handle the UI update
-
-    def _on_camera_remove_requested(self, sender, *, camera: Camera):
-        """Handles the request to remove a camera from the machine."""
-        camera.enabled = False
-        self.machine.remove_camera(camera)
-        # The machine.changed signal will handle the UI update
-
-    def _sync_camera_page(self, sender=None, **kwargs):
-        """Updates child pages that depend on the list of live controllers."""
-        camera_mgr = get_context().camera_mgr
-        # Get all live controllers and filter them for this specific
-        # machine
-        all_controllers = camera_mgr.controllers
-        machine_camera_device_ids = {c.device_id for c in self.machine.cameras}
-        relevant_controllers = [
-            c
-            for c in all_controllers
-            if c.config.device_id in machine_camera_device_ids
-        ]
-        self.camera_page.set_controllers(relevant_controllers)
-
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
-        camera_mgr = get_context().camera_mgr
-        camera_mgr.controller_added.disconnect(self._sync_camera_page)
-        camera_mgr.controller_removed.disconnect(self._sync_camera_page)
         self.machine.changed.disconnect(self._on_machine_changed)

@@ -223,23 +223,6 @@ class SketchStudio(Gtk.Box):
         self.canvas_overlay = Gtk.Overlay()
         self.canvas_overlay.set_child(self.canvas)
 
-        self._cam_icon_on = get_icon("camera-on-symbolic")
-        self._cam_icon_off = get_icon("camera-off-symbolic")
-        self._camera_button = Gtk.ToggleButton()
-        self._camera_button.set_child(self._cam_icon_off)
-        self._camera_button.set_tooltip_text(_("Toggle camera view"))
-        self._camera_button.connect("toggled", self._on_camera_toggled)
-        self._camera_overlay_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=2
-        )
-        self._camera_overlay_box.add_css_class("visibility-overlay")
-        self._camera_overlay_box.append(self._camera_button)
-        self._camera_overlay_box.set_halign(Gtk.Align.END)
-        self._camera_overlay_box.set_valign(Gtk.Align.START)
-        self._camera_overlay_box.set_margin_top(6)
-        self._camera_overlay_box.set_margin_end(6)
-        self.canvas_overlay.add_overlay(self._camera_overlay_box)
-
         # The paned widget will handle expansion.
         main_paned.set_end_child(self.canvas_overlay)
 
@@ -387,9 +370,6 @@ class SketchStudio(Gtk.Box):
         self.canvas.sketch_element.update_bounds_from_sketch()
         # Reset view to center content
         self.canvas.reset_view()
-
-        # Sync camera elements (visibility stays hidden until user toggles)
-        self.canvas.sync_camera_elements()
 
         # Grab focus for the canvas so keyboard shortcuts work
         # Use a tick callback to ensure focus is grabbed after the widget
@@ -553,13 +533,6 @@ class SketchStudio(Gtk.Box):
                 btn.get_active()
             )
             self.canvas.sketch_element.mark_dirty()
-
-    def _on_camera_toggled(self, btn):
-        """Handles camera toggle from the visibility overlay button."""
-        is_visible = btn.get_active()
-        self.canvas.set_camera_image_visibility(is_visible)
-        self.canvas.sync_camera_elements()
-        btn.set_child(self._cam_icon_on if is_visible else self._cam_icon_off)
 
     def _on_cancel_clicked(self, btn, *args):
         logger.info("SketchStudio: Cancel clicked")

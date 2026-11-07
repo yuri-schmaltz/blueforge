@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     import pluggy
 
     from .addon_mgr.addon_manager import AddonManager
-    from .camera.manager import CameraManager
     from .core.addon_config import AddonConfig
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
@@ -55,7 +54,6 @@ class RayforgeContext:
         self._machine_mgr: Optional["MachineManager"] = None
         self._config_mgr: Optional["ConfigManager"] = None
         self._config: Optional["Config"] = None
-        self._camera_mgr: Optional["CameraManager"] = None
         self._material_mgr: Optional["LibraryManager"] = None
         self._model_mgr: Optional["ModelManager"] = None
         self._recipe_mgr: Optional["RecipeManager"] = None
@@ -213,17 +211,6 @@ class RayforgeContext:
         return self.config_mgr.config
 
     @property
-    def camera_mgr(self) -> "CameraManager":
-        """Returns the camera manager."""
-        if self._camera_mgr is None:
-            from .camera.manager import CameraManager
-
-            logger.info("Lazy loading camera manager")
-            self._camera_mgr = CameraManager(self)
-            self._camera_mgr.initialize()
-        return self._camera_mgr
-
-    @property
     def material_mgr(self) -> "LibraryManager":
         """Returns the material manager."""
         if self._material_mgr is None:
@@ -318,7 +305,7 @@ class RayforgeContext:
     def initialize_lite_context(self, machine_dir):
         """
         Initializes a minimal context for testing. Sets up MachineManager
-        and Config without cameras, materials, recipes, or addons.
+        and Config without materials, recipes, or addons.
         """
         from pathlib import Path
 
@@ -345,8 +332,6 @@ class RayforgeContext:
         Shuts down all managed services in the correct order.
         """
         logger.info("RayforgeContext shutting down...")
-        if self._camera_mgr:
-            self._camera_mgr.shutdown()
         if self._machine_mgr:
             await self._machine_mgr.shutdown()
         self.artifact_store.shutdown()
