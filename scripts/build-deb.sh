@@ -24,7 +24,7 @@ echo "Detected upstream version: ${UPSTREAM_VERSION}"
 
 # --- 2. Vendor Dependencies: Pre-download wheels ---
 echo "--- Vendoring pre-built wheels ---"
-TMP_SRC_DIR="${BUILD_DIR}/pires-forge-${UPSTREAM_VERSION}"
+TMP_SRC_DIR="${BUILD_DIR}/blueforge-${UPSTREAM_VERSION}"
 mkdir -p "${TMP_SRC_DIR}/vendor/sdist"
 
 REQUIREMENTS_FILE="debian/requirements-bundle.txt"
@@ -91,8 +91,8 @@ rsync -a \
     --exclude='debian' \
     "$ORIG_DIR"/ "$TMP_SRC_DIR"/
 
-TARBALL_NAME="pires-forge_${UPSTREAM_VERSION}.orig.tar.gz"
-tar -czf "$BUILD_DIR/$TARBALL_NAME" -C "$BUILD_DIR" "pires-forge-${UPSTREAM_VERSION}"
+TARBALL_NAME="blueforge_${UPSTREAM_VERSION}.orig.tar.gz"
+tar -czf "$BUILD_DIR/$TARBALL_NAME" -C "$BUILD_DIR" "blueforge-${UPSTREAM_VERSION}"
 echo "Created: $BUILD_DIR/$TARBALL_NAME"
 
 # --- 4. Build the Package ---
@@ -136,6 +136,6 @@ env -i \
 echo "--- Copying build artifacts back to project's dist/ directory ---"
 mkdir -p "$ORIG_DIR/dist"
 # This finds the .deb, .dsc, .tar.gz, and the new _source.changes
-find "$BUILD_DIR" -maxdepth 1 -name 'pires-forge*' -type f -exec cp -v {} "$ORIG_DIR/dist/" \;
+find "$BUILD_DIR" -maxdepth 1 -name 'blueforge*' -type f -exec cp -v {} "$ORIG_DIR/dist/" \;
 
 echo "Build complete. Artifacts are in the dist/ directory."

@@ -11,10 +11,7 @@ hiddenimports += collect_submodules('rayforge.core')
 hiddenimports.append('rayforge.ui_gtk.canvas2d.elements.workpiece')
 
 # Use modern .icon (via Assets.car) when available, fall back to .icns.
-# Note: the .icns/.icon files are still named "rayforge.icns"/"rayforge.icon"
-# internally because they're generated at build time by the macOS icon
-# script from a source SVG, and PyInstaller expects these names. The
-# user-visible bundle name is "Pires Forge" (see CFBundleExecutable).
+# The legacy icon generator writes rayforge.icns.
 _use_car = os.path.exists('Assets.car')
 _icon = None if _use_car else 'rayforge.icns'
 
@@ -53,7 +50,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='PiresForge',  # No-space name avoids post-build script issues
+    name='Blueforge',  # No-space name avoids post-build script issues
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -73,15 +70,15 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='PiresForge',
+    name='Blueforge',
 )
 app = BUNDLE(
     coll,
-    name='PiresForge.app',
+    name='Blueforge.app',
     icon=_icon,
-    bundle_identifier='org.piresforge.pires-forge',
+    bundle_identifier='org.blueforge.blueforge',
     info_plist={
-        **({'CFBundleIconName': 'pires-forge'} if _use_car else {}),
+        **({'CFBundleIconName': 'blueforge'} if _use_car else {}),
         'LSMinimumSystemVersion': '12.0',
     },
 )

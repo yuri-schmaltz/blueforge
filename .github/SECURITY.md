@@ -1,6 +1,6 @@
 # Security Policy
 
-Pires Forge is a personal fork maintained by a single developer
+Blueforge is a personal fork maintained by a single developer
 ([Yuri Schmaltz](https://github.com/yuri-schmaltz)). This page
 documents how to report a vulnerability and what to expect.
 
@@ -43,7 +43,7 @@ via the regular [issue tracker](../../issues) instead:
 
 ## Threat Model (high level)
 
-Pires Forge handles user-provided files (SVG, DXF, PDF, images,
+Blueforge handles user-provided files (SVG, DXF, PDF, images,
 project files) and renders them in a GTK application. The fork
 ships hardening against the following classes of attack:
 

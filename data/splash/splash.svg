@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
-  Pires Forge — Splash screen placeholder (vector).
+  Blueforge — Splash screen placeholder (vector).
 
   This is a *placeholder* splash screen. The real splash screen
   is rendered by the application at runtime (typically a Gtk.Window
@@ -11,7 +11,7 @@
   Layout (800x500 viewBox, 16:10 standard splash aspect):
   - Background: deep black gradient (top: #0a0a0a, bottom: #1a1a1a)
   - Center-top: the app icon (spark burst) at 256x256
-  - Center-bottom: app name "Pires Forge" (large, light gray)
+  - Center-bottom: app name "Blueforge" (large, light gray)
   - Subtitle: tagline (smaller, dimmer)
   - Bottom: tiny version + status line
 
@@ -23,9 +23,9 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 800 500"
      width="800" height="500"
-     role="img" aria-label="Pires Forge splash screen placeholder">
+     role="img" aria-label="Blueforge splash screen placeholder">
 
-  <title>Pires Forge — Splash</title>
+  <title>Blueforge — Splash</title>
 
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -46,7 +46,7 @@
 
   <!-- App icon (centered horizontally, top portion).
        Reuses the spark-burst motif from
-       resources/icons/org.piresforge.pires-forge.svg,
+       resources/icons/org.blueforge.blueforge.svg,
        scaled to 256x256 and placed at (272, 60). -->
   <g transform="translate(272 60) scale(0.5)">
     <!-- 512x512 viewBox assumed (matches the icon file).
@@ -90,7 +90,7 @@
         font-size="56"
         font-weight="700"
         fill="#f0f0f0"
-        text-anchor="middle">Pires Forge</text>
+        text-anchor="middle">Blueforge</text>
 
   <!-- Tagline / subtitle -->
   <text x="400" y="405"

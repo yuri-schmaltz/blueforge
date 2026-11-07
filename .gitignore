@@ -65,3 +65,6 @@ Thumbs.db
 
 # Worktrees
 .worktrees/
+
+# Generated documentation
+site/

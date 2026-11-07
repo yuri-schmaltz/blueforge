@@ -1,7 +1,7 @@
 # Splash screen placeholder
 
 This directory contains the **placeholder** splash screen assets
-for Pires Forge. The current files are a starting point — they
+for Blueforge. The current files are a starting point — they
 are committed so the directory structure is reviewable, but the
 runtime splash window is **not yet wired up** in
 `rayforge/app.py:startup()`.
@@ -18,8 +18,8 @@ runtime splash window is **not yet wired up** in
 
 - **Background**: black-to-dark-gray vertical gradient.
 - **App icon**: centered top, 256×256, reuses the spark-burst
-  motif from `rayforge/resources/icons/org.piresforge.pires-forge.svg`.
-- **App name**: "Pires Forge" in light gray, large weight.
+  motif from `rayforge/resources/icons/org.blueforge.blueforge.svg`.
+- **App name**: "Blueforge" in light gray, large weight.
 - **Tagline**: "2D CAD, G-code sender, and laser control".
 - **Status line**: "vX.Y.Z · loading…" (updated at runtime).
 

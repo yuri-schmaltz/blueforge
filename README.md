@@ -1,22 +1,22 @@
-# Pires Forge
+# Blueforge
 
-[![Latest release](https://img.shields.io/github/v/release/yuri-schmaltz/pires-forge?display_name=tag&style=flat-square)](https://github.com/yuri-schmaltz/pires-forge/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/yuri-schmaltz/blueforge?display_name=tag&style=flat-square)](https://github.com/yuri-schmaltz/blueforge/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
-[![Platforms: Linux, macOS, Windows](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square)](#install)
+[![Platforms: Linux, macOS, Windows](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square)](#installation)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg?style=flat-square)](pyproject.toml)
 [![GTK 4](https://img.shields.io/badge/GTK-4-blueviolet.svg?style=flat-square)](https://gtk.org)
 [![Single maintainer](https://img.shields.io/badge/maintainer-Yuri%20Schmaltz-orange.svg?style=flat-square)](CONTRIBUTORS.md)
 
-Pires Forge is a modern, cross-platform 2D CAD, G-code sender and
+Blueforge is a modern, cross-platform 2D CAD, G-code sender and
 control software for GRBL, Marlin, Ruida, and Smoothieware-based
 laser cutters and engravers. Built with Gtk4 and Libadwaita, it
 provides a clean, native interface for Linux, macOS, and Windows,
 offering a full suite of tools for both hobbyists and professionals.
 
-> **This is a fork.** Pires Forge is an independent rebrand of the
+> **This is a fork.** Blueforge is an independent rebrand of the
 > [Rayforge](https://github.com/barebaric/rayforge) project, maintained
-> by [Yuri Schmaltz](https://github.com/yuri-schmaltz) as a
-> production-ready, security-hardened fork. The Python module path
+> by [Yuri Schmaltz](https://github.com/yuri-schmaltz) as an
+> independent fork with its own interface and release process. The Python module path
 > (`rayforge/`), addon API, and project structure are kept compatible
 > with the original codebase.
 
@@ -107,9 +107,9 @@ offering a full suite of tools for both hobbyists and professionals.
 
 ## Installation
 
-Pires Forge is distributed as a `.deb` (Ubuntu), `.dmg` (macOS), and
+Blueforge is distributed as a `.deb` (Ubuntu), `.dmg` (macOS), and
 `.exe` (Windows) from the
-[Releases page](https://github.com/yuri-schmaltz/pires-forge/releases).
+[Releases page](https://github.com/yuri-schmaltz/blueforge/releases).
 
 For detailed installation instructions, see
 [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
@@ -117,8 +117,8 @@ For detailed installation instructions, see
 Quick install on Ubuntu 24.04:
 
 ```bash
-sudo apt install ./pires-forge-linux.deb
-pires-forge
+sudo apt install ./blueforge-linux.deb
+blueforge
 ```
 
 ## Building from Source

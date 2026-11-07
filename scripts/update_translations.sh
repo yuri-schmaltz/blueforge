@@ -149,18 +149,16 @@ if [ "$COMPILE_ONLY" = false ]; then
     cp "$POT_FILE" "${POT_FILE}.old"
   fi
 
-  # Extract strings to temp file
-  find rayforge/ -name "*.py" \
-    -not -path "*/builtin_addons/*" \
-    -not -path "*/private_addons/*" | \
-    xgettext --from-code=UTF-8 --add-location=file -o "$POT_TMP" -f -
+  # Share the deterministic core extractor with the CI catalog check.
+  python3 -m rayforge.util.i18n_extract --no-merge
+  cp "$POT_FILE" "$POT_TMP"
 
   # Compare old and new .pot files
   if [ -f "${POT_FILE}.old" ]; then
     if compare_pot_files "${POT_FILE}.old" "$POT_TMP"; then
       echo "  No changes detected, keeping original .pot file"
       rm "$POT_TMP"
-      rm "${POT_FILE}.old"
+      mv "${POT_FILE}.old" "$POT_FILE"
     else
       echo "  Changes detected, updating .pot file"
       mv "$POT_TMP" "$POT_FILE"

@@ -1,4 +1,4 @@
-Source: pires-forge
+Source: blueforge
 Section: graphics
 Priority: optional
 Maintainer: Yuri Schmaltz <security@yuri-schmaltz.dev>
@@ -17,9 +17,9 @@ Build-Depends: cargo,
                python3-wheel,
                rustc,
 Standards-Version: 4.6.2
-Homepage: https://github.com/barebaric/rayforge
+Homepage: https://github.com/yuri-schmaltz/blueforge
 
-Package: pires-forge
+Package: blueforge
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
   python3-gi, python3-git, python3-cairo, python3-gi-cairo,
@@ -31,5 +31,5 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
   python3-defusedxml,
   python3-svgelements, python3-semver, python3-fitz, python3-serial
 Description: Desktop application for laser cutting and engraving
- Pires Forge is a powerful, open-source, and cross-platform software for
+ Blueforge is a powerful, open-source, and cross-platform software for
  controlling your laser cutter and engraver.

@@ -1,4 +1,4 @@
-# Pires Forge developer Makefile
+# Blueforge developer Makefile
 #
 # This Makefile is a thin wrapper around `pixi` for the most
 # common dev tasks. It exists so that contributors can use the
@@ -19,12 +19,12 @@ SHELL := /usr/bin/env bash
 # Print a help message that lists every documented target.
 .PHONY: help
 help:
-	@echo "Pires Forge dev targets:"
+	@echo "Blueforge dev targets:"
 	@echo "  make install   - install the pixi environment"
-	@echo "  make run       - run the app (pixi run pires-forge)"
+	@echo "  make run       - run the app (pixi run blueforge)"
 	@echo "  make test      - run the test suite"
 	@echo "  make uitest    - run the UI tests (needs a display)"
-	@echo "  make lint      - run ruff + bandit + format checks"
+	@echo "  make lint      - run flake8 + pyflakes + pyright"
 	@echo "  make format    - auto-format Python source with ruff"
 	@echo "  make coverage  - run tests with coverage report"
 	@echo "  make build     - build the .deb installer (Linux only)"
@@ -40,7 +40,7 @@ install:
 # Run the app in dev mode.
 .PHONY: run
 run:
-	pixi run pires-forge
+	pixi run blueforge
 
 # Run the full test suite (pytest, including addon tests).
 .PHONY: test
@@ -52,8 +52,7 @@ test:
 uitest:
 	pixi run uitest
 
-# Lint everything: ruff check + bandit. Fails on any HIGH-severity
-# bandit finding.
+# Run the Pixi lint task: flake8, pyflakes and pyright.
 .PHONY: lint
 lint:
 	pixi run lint

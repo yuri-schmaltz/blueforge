@@ -1,9 +1,13 @@
 # Documentation
 
-User-facing documentation for Pires Forge.
+User-facing documentation for Blueforge.
+
+- [Project status](PROJECT_STATUS.md) — Changes, validation and remaining limitations.
 
 ## Getting Started
 
+- [User manual](../USER_MANUAL.md) — App workflow and CAD interface limitations.
+- [Developer guide](../DEVELOPER_GUIDE.md) — Architecture and tests.
 - [`INSTALLATION.md`](INSTALLATION.md) — Install pre-built binaries
   (`.deb` for Ubuntu 24.04, `.dmg` for macOS, `.exe` for Windows).
 - [`docs/screenshots/README.md`](screenshots/README.md) — A small

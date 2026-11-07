@@ -1,13 +1,13 @@
 # Diagnostics and Crash Logs
 
-This document explains how [Pires Forge](https://github.com/yuri-schmaltz/pires-forge)
-handles diagnostics and "crash logs". Pires Forge is
+This document explains how [Blueforge](https://github.com/yuri-schmaltz/blueforge)
+handles diagnostics and "crash logs". Blueforge is
 **privacy-respecting by design**: nothing is sent anywhere
 automatically. This page documents the opt-in model.
 
 ## The opt-in model
 
-Pires Forge has **no automatic crash reporting**. There is no
+Blueforge has **no automatic crash reporting**. There is no
 Sentry, no telemetry, no remote upload, no background process
 that captures state. The only diagnostic feature is the
 **Save Debug Log** menu action, which the user triggers
@@ -33,7 +33,7 @@ The debug .zip contains:
 | `config.yaml` | The user's config file (PII-redacted) | Helps reproduce bugs related to settings |
 | `machine_profiles/*.yaml` | The user's machine profiles (PII-redacted) | Helps diagnose device-driver issues |
 | `addon_registry.yaml` | The list of installed addons | Helps reproduce addon compatibility issues |
-| `version.txt` | The Pires Forge version | Identifies which build the user is on |
+| `version.txt` | The Blueforge version | Identifies which build the user is on |
 | `python_version.txt` | The Python version | Helps diagnose platform-specific bugs |
 | `platform.txt` | `linux-64`, `macos-arm64`, etc. | Identifies the user's platform |
 | (optional) `current_project.ryp` | The currently open project | Helps reproduce issues with specific files |
@@ -49,7 +49,7 @@ The following are **excluded** by the dump logic:
 - **Other users' files** (the bundle only includes files from
   the current user's config directory).
 - **The system clipboard** contents.
-- **Network traffic** (Pires Forge does not capture this).
+- **Network traffic** (Blueforge does not capture this).
 - **Any telemetry** — there is none to capture.
 
 ## How to use the debug bundle
@@ -57,7 +57,7 @@ The following are **excluded** by the dump logic:
 1. Reproduce the bug with **Help → Save Debug Log** open.
 2. Click **Save** to write the bundle to your disk.
 3. **Open a GitHub issue** at
-   <https://github.com/yuri-schmaltz/pires-forge/issues/new/choose>
+   <https://github.com/yuri-schmaltz/blueforge/issues/new/choose>
    and attach the `.zip` file.
 4. The maintainer will review the bundle locally and may ask
    follow-up questions. The bundle is **not** automatically
@@ -74,7 +74,7 @@ the raw log file at:
 
 ## Telemetry and analytics
 
-Pires Forge has **no telemetry**. The
+Blueforge has **no telemetry**. The
 `rayforge.usage.UsageTracker` module exists in the source tree for
 backward compatibility with the upstream Rayforge, but the
 `UMAMI_URL` and `UMAMI_WEBSITE_ID` constants are set to empty

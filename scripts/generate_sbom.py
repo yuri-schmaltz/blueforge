@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate a Software Bill of Materials (SBOM) for the Pires Forge
+Generate a Software Bill of Materials (SBOM) for the Blueforge
 runtime dependency tree.
 
 Outputs both:
@@ -16,8 +16,8 @@ Run via:
     python3 scripts/generate_sbom.py --version 1.1.0  # override version
 
 The output files are written to `dist/sbom/`:
-    dist/sbom/pires-forge.cdx.json    # CycloneDX 1.5
-    dist/sbom/pires-forge.spdx.json   # SPDX 2.3
+    dist/sbom/blueforge.cdx.json    # CycloneDX 1.5
+    dist/sbom/blueforge.spdx.json   # SPDX 2.3
 
 Why a custom script vs. `cyclonedx-py` or `pip-licenses`?
   - `cyclonedx-py` doesn't ship with the pixi env by default and
@@ -119,11 +119,11 @@ def cdx_bom(packages: list[dict[str, Any]], project_version: str) -> dict[str, A
         "version": 1,
         "metadata": {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "tools": [{"name": "pires-forge-generate-sbom", "version": "1.0.0"}],
+            "tools": [{"name": "blueforge-generate-sbom", "version": "1.0.0"}],
             "component": {
                 "type": "application",
-                "bom-ref": f"pkg:pypi/pires-forge@{project_version}",
-                "name": "pires-forge",
+                "bom-ref": f"pkg:pypi/blueforge@{project_version}",
+                "name": "blueforge",
                 "version": project_version,
             },
         },
@@ -153,11 +153,11 @@ def spdx_bom(packages: list[dict[str, Any]], project_version: str) -> dict[str, 
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
         "SPDXID": "SPDXRef-DOCUMENT",
-        "name": f"pires-forge-{project_version}-sbom",
-        "documentNamespace": f"https://github.com/yuri-schmaltz/pires-forge/sbom/{generate_uuid()}",
+        "name": f"blueforge-{project_version}-sbom",
+        "documentNamespace": f"https://github.com/yuri-schmaltz/blueforge/sbom/{generate_uuid()}",
         "creationInfo": {
             "created": datetime.now(timezone.utc).isoformat(),
-            "creators": ["Tool: pires-forge-generate-sbom-1.0.0"],
+            "creators": ["Tool: blueforge-generate-sbom-1.0.0"],
         },
         "packages": packages_spdx,
     }
@@ -172,7 +172,7 @@ def generate_uuid() -> str:
 def get_project_version() -> str:
     """Get the project version from pixi.toml."""
     pixi = (REPO_ROOT / "pixi.toml").read_text()
-    m = re.search(r'^name = "pires-forge"\s*\nversion = "([^"]+)"', pixi, re.MULTILINE)
+    m = re.search(r'^name = "blueforge"\s*\nversion = "([^"]+)"', pixi, re.MULTILINE)
     return m.group(1) if m else "0.0.0"
 
 
@@ -208,11 +208,11 @@ def main():
         packages.append(meta)
 
     if args.format in ("cyclonedx", "both"):
-        out = OUTPUT_DIR / "pires-forge.cdx.json"
+        out = OUTPUT_DIR / "blueforge.cdx.json"
         out.write_text(json.dumps(cdx_bom(packages, project_version), indent=2))
         print(f"  Wrote {out} ({out.stat().st_size//1024} KB)")
     if args.format in ("spdx", "both"):
-        out = OUTPUT_DIR / "pires-forge.spdx.json"
+        out = OUTPUT_DIR / "blueforge.spdx.json"
         out.write_text(json.dumps(spdx_bom(packages, project_version), indent=2))
         print(f"  Wrote {out} ({out.stat().st_size//1024} KB)")
 

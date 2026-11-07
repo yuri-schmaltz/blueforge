@@ -1,6 +1,6 @@
 # Contributors
 
-Pires Forge is maintained by a single contributor:
+Blueforge is maintained by a single contributor:
 
 - **Yuri Schmaltz** <security@yuri-schaltz.dev> — maintainer, all commits
 

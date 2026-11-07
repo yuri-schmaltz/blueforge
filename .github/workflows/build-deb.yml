@@ -2,7 +2,7 @@ name: Build .deb package
 
 # Fork-friendly version of publish-deb.yml: builds the Ubuntu 24.04 .deb
 # and uploads it as a workflow artifact. Does NOT publish to Launchpad PPA
-# (the upstream yuri-schmaltz/pires-forge owns that account).
+# (the upstream yuri-schmaltz/blueforge owns that account).
 #
 # Triggers:
 #   - push to main
@@ -123,7 +123,7 @@ jobs:
           echo "Built: $DEB_FILE_PATH"
 
           # Rename to a friendlier filename for the artifact.
-          FRIENDLY_NAME="pires-forge-${CLEAN_VERSION}-ubuntu24.04.deb"
+          FRIENDLY_NAME="blueforge-${CLEAN_VERSION}-ubuntu24.04.deb"
           cp "$DEB_FILE_PATH" "dist/$FRIENDLY_NAME"
           echo "Friendly name: $FRIENDLY_NAME"
           echo "deb_file_path=dist/$FRIENDLY_NAME" >> $GITHUB_OUTPUT
@@ -183,18 +183,18 @@ jobs:
         run: |
           DEB_FILE="${{ steps.build_deb.outputs.deb_file_path }}"
           sudo apt-get install -y "./$DEB_FILE"
-          dpkg -l pires-forge
-          pires-forge --version
+          dpkg -l blueforge
+          blueforge --version
 
       - name: Smoke-test the GUI startup chain under Xvfb
         # Real startup test: the previous 'Test package installation'
-        # step only checked `pires-forge --version`, which is just a
+        # step only checked `blueforge --version`, which is just a
         # import+version print. That misses every bug in App.do_activate
         # -> MainWindow.__init__ chain (the same chain that produced
         # FIX-2..FIX-7 + the v1.3.3 config/progress typos we just
         # fixed). This step:
         #   1. Starts Xvfb on :99
-        #   2. Runs `pires-forge` under DISPLAY=:99 in background
+        #   2. Runs `blueforge` under DISPLAY=:99 in background
         #   3. Sleeps 8s, then checks if the process is still alive
         #   4. Kills it; fails the job if it died early
         # Cost: ~10s on the build-deb job. Worth it: would have caught
@@ -216,29 +216,29 @@ jobs:
           fi
           echo "Xvfb running (pid=${XVFB_PID})"
 
-          # Launch pires-forge under the virtual display
+          # Launch blueforge under the virtual display
           export DISPLAY=:99
-          rm -f /tmp/pires-forge-startup.log
-          pires-forge >/tmp/pires-forge-startup.log 2>&1 &
+          rm -f /tmp/blueforge-startup.log
+          blueforge >/tmp/blueforge-startup.log 2>&1 &
           APP_PID=$!
-          echo "pires-forge launched (pid=${APP_PID}), waiting 8s for startup chain..."
+          echo "blueforge launched (pid=${APP_PID}), waiting 8s for startup chain..."
 
           # Wait and check liveness
           sleep 8
           if kill -0 ${APP_PID} 2>/dev/null; then
-            echo "OK: pires-forge still alive after 8s (no startup crash)"
+            echo "OK: blueforge still alive after 8s (no startup crash)"
             # Capture a tail of the log for the artifact even on success
-            tail -30 /tmp/pires-forge-startup.log > /tmp/pires-forge-startup.tail || true
+            tail -30 /tmp/blueforge-startup.log > /tmp/blueforge-startup.tail || true
             kill ${APP_PID} 2>/dev/null || true
           else
-            echo "::error::pires-forge CRASHED during startup (pid ${APP_PID} exited within 8s)"
-            echo "--- /tmp/pires-forge-startup.log (last 80 lines) ---"
-            tail -80 /tmp/pires-forge-startup.log || true
+            echo "::error::blueforge CRASHED during startup (pid ${APP_PID} exited within 8s)"
+            echo "--- /tmp/blueforge-startup.log (last 80 lines) ---"
+            tail -80 /tmp/blueforge-startup.log || true
             echo "--- end of log ---"
             # Surface the traceback lines explicitly so they show up in
             # the failed-CI email/Slack notification (the surrounding
             # log noise tends to bury them).
-            grep -nE "Traceback|Error:|AttributeError|TypeError|NameError|ModuleNotFoundError" /tmp/pires-forge-startup.log | head -20 || true
+            grep -nE "Traceback|Error:|AttributeError|TypeError|NameError|ModuleNotFoundError" /tmp/blueforge-startup.log | head -20 || true
             EXIT_CODE=1
           fi
 

@@ -1,4 +1,4 @@
-# Contributing to Pires Forge
+# Contributing to Blueforge
 
 This document covers **how to contribute** — branching,
 PRs, worktrees, validation gates, and the conventions
@@ -27,7 +27,7 @@ development setup**, see [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
 
 ## 1. Code of conduct
 
-Pires Forge is a single-maintainer project. Be patient,
+Blueforge is a single-maintainer project. Be patient,
 be kind, and prefer concrete suggestions over criticism.
 PRs that don't get a response in 2 weeks can be pinged
 once; if still no response, the contributor is free to
@@ -38,7 +38,7 @@ fork.
 ## 2. Workflow at a glance
 
 ```
-1. Pick a P-item from ROADMAP.md (or open a fresh issue)
+1. Pick an open issue (or open a fresh issue)
 2. Create a worktree off main: git worktree add .worktrees/<branch> -b <branch> main
 3. Develop, commit, repeat (one commit per logical change)
 4. Run validation gates (see §6)
@@ -61,7 +61,7 @@ its own worktree.
 
 ```sh
 # Create the worktree
-cd /workspace/pires-forge
+cd /workspace/blueforge
 git worktree add .worktrees/feature-x -b feature-x main
 
 # Develop
@@ -76,7 +76,7 @@ git push -u origin feature-x
 # Open a PR via the GitHub web UI
 
 # After merge, cleanup
-cd /workspace/pires-forge
+cd /workspace/blueforge
 git worktree remove .worktrees/feature-x --force
 git worktree prune
 git branch -D feature-x
@@ -163,7 +163,8 @@ Before opening a PR, verify:
   (if you added user-facing strings)
 - [ ] `python3 -m rayforge.util.contrast_check` returns 0
   (if you added a new color)
-- [ ] `pytest tests/gui/ tests/property/` passes locally
+- [ ] `pixi run --frozen uitest` and
+  `PYTHONPATH=. pixi run --frozen python tests/property/__init__.py` passes locally
   (if you modified a widget or a tested module)
 - [ ] Commit messages follow the conventional commits format
 - [ ] PR body describes:
@@ -180,21 +181,26 @@ Every PR is checked by CI. The gates are:
 
 | Gate | Trigger | Pass criteria |
 |---|---|---|
-| Lint | Every PR | ruff + pyright pass |
-| Backend tests | Every PR | pytest tests/core/ tests/addon_mgr/ passes |
-| UI tests | Every PR | pytest tests/gui/ passes |
+| Lint | Every PR | flake8 + pyflakes + pyright pass |
+| Backend tests | Every PR | `pixi run test` passes, including built-in addons |
+| UI tests | Every PR | `pixi run uitest` passes under Xvfb |
 | Property tests | Every PR | 100 iterations × 8 properties pass |
 | i18n check | Every PR | `i18n_extract --check` exits 0 |
 | Contrast check | Every PR | `contrast_check` exits 0 |
 | Perf gate | Every PR | `benchmarks --compare` < 10% regression |
 
-The i18n and contrast checks are **advisory** today
-(warnings, not errors). The other gates are blocking.
+The workflows enforce i18n and contrast checks. Known contrast exceptions
+are listed in the checker. Coverage uses the baseline in `pyproject.toml`
+(currently 35%).
 
 To run all gates locally:
 
 ```sh
-pixi run -e test pytest tests/ -v
+pixi run --frozen test
+pixi run --frozen uitest
+pixi run --frozen lint
+pixi run --frozen coverage
+pixi run --frozen -e docs docs-build
 python3 -m rayforge.util.i18n_audit
 python3 -m rayforge.util.contrast_check
 python3 -m rayforge.util.benchmarks --output /tmp/bench.json
@@ -223,7 +229,7 @@ python3 -m rayforge.util.benchmarks --output /tmp/bench.json
 1. Copy `rayforge/locale/rayforge.pot` to
    `rayforge/locale/<lang>/LC_MESSAGES/rayforge.po`
 2. Open in POEdit (or any editor) and translate
-3. Test by setting `LANGUAGE=<lang> pixi run pires-forge`
+3. Test by setting `LANGUAGE=<lang> pixi run blueforge`
 4. Open a PR with the new .po file
 
 **Translation review (existing languages):**
@@ -251,7 +257,7 @@ with tracer.span("my.slow.op"):
 **Visualizing as a flame graph:**
 
 ```sh
-RAYFORGE_TRACE=1 pixi run pires-forge
+RAYFORGE_TRACE=1 pixi run blueforge
 # On exit, the trace report is printed. To get the
 # JSON for the flame graph viewer:
 python3 -c "
@@ -300,7 +306,7 @@ set_a11y_label(
 mark_live_region(my_status_bar, polite=True)
 ```
 
-Verify with orca: `orca &` then launch pires-forge.
+Verify with orca: `orca &` then launch blueforge.
 Tab through the UI and confirm every widget announces
 correctly.
 
@@ -337,5 +343,3 @@ merge time.
 
 - [USER_MANUAL.md](USER_MANUAL.md) — how to use the app
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — architecture and dev setup
-- [ROADMAP.md](ROADMAP.md) — what's planned and what's done
-- [PROCESS_JOURNAL.md](PROCESS_JOURNAL.md) — chronological log of recent waves

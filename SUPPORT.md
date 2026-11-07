@@ -1,11 +1,11 @@
 # Support / Troubleshooting
 
 This document covers the most common questions and issues with
-**[Pires Forge](https://github.com/yuri-schmaltz/pires-forge)**.
+**[Blueforge](https://github.com/yuri-schmaltz/blueforge)**.
 
 If your problem isn't here, search the
-[open issues](https://github.com/yuri-schmaltz/pires-forge/issues)
-or [open a new one](https://github.com/yuri-schmaltz/pires-forge/issues/new/choose).
+[open issues](https://github.com/yuri-schmaltz/blueforge/issues)
+or [open a new one](https://github.com/yuri-schmaltz/blueforge/issues/new/choose).
 
 > For security issues, email **<security@yuri-schmaltz.dev>** — please
 > do not open a public issue for security bugs.
@@ -15,13 +15,13 @@ or [open a new one](https://github.com/yuri-schmaltz/pires-forge/issues/new/choo
 ### Linux (`.deb` for Ubuntu 24.04)
 
 ```bash
-sudo apt install /path/to/pires-forge-linux.deb
-pires-forge
+sudo apt install /path/to/blueforge-linux.deb
+blueforge
 ```
 
-The `.deb` installs the binary at `/usr/bin/pires-forge`, the desktop
-entry at `/usr/share/applications/org.piresforge.pires-forge.desktop`,
-and the icon at `/usr/share/icons/hicolor/scalable/apps/org.piresforge.pires-forge.svg`.
+The `.deb` installs the binary at `/usr/bin/blueforge`, the desktop
+entry at `/usr/share/applications/org.blueforge.blueforge.desktop`,
+and the icon at `/usr/share/icons/hicolor/scalable/apps/org.blueforge.blueforge.svg`.
 
 After installing, run:
 
@@ -31,28 +31,28 @@ sudo gtk-update-icon-cache -f /usr/share/icons/hicolor
 ```
 
 Then log out and back in (Cinnamon refreshes the menu cache on
-session start). The app should appear in **Menu → Graphics → Pires Forge**.
+session start). The app should appear in **Menu → Graphics → Blueforge**.
 
 > If you previously had an older release installed, remove it first
 > because the Debian package was renamed from `rayforge` to
-> `pires-forge`:
+> `blueforge`:
 >
 > ```bash
-> sudo apt remove rayforge  # or pires-forge, whichever is installed
-> sudo apt install /path/to/pires-forge-linux.deb
+> sudo apt remove rayforge  # or blueforge, whichever is installed
+> sudo apt install /path/to/blueforge-linux.deb
 > ```
 
 ### macOS (`.dmg`)
 
-Open the `.dmg`, drag `Pires Forge.app` to `/Applications`, and
+Open the `.dmg`, drag `Blueforge.app` to `/Applications`, and
 double-click to launch. You may need to allow the app in
 **System Settings → Privacy & Security** the first time.
 
 ### Windows (`.exe`)
 
-Run the NSIS installer (`pires-forge-v1.0.0-installer.exe`). The
-default install location is `C:\Program Files\Pires Forge`. The
-Start Menu entry is under **Pires Forge**.
+Run the NSIS installer (`blueforge-v1.0.0-installer.exe`). The
+default install location is `C:\Program Files\Blueforge`. The
+Start Menu entry is under **Blueforge**.
 
 ## Application is in Portuguese but the UI is in English
 
@@ -77,7 +77,7 @@ The most common cause is a stale `.desktop` `Exec=` field pointing
 to the old binary name. The first rebrand release shipped with
 `Exec=rayforge` (the old binary name) which causes Cinnamon to
 hide the entry because the binary doesn't exist. Fixed in
-`1.0.0-pires2` / `1.0.0` with `Exec=pires-forge`.
+`1.0.0-pires2` / `1.0.0` with `Exec=blueforge`.
 
 If you have the old `.deb` installed, either:
 
@@ -86,18 +86,18 @@ If you have the old `.deb` installed, either:
 
    ```bash
    mkdir -p ~/.local/share/applications
-   cat > ~/.local/share/applications/pires-forge.desktop << 'EOF'
+   cat > ~/.local/share/applications/blueforge.desktop << 'EOF'
    [Desktop Entry]
    Version=1.0
    Type=Application
-   Name=Pires Forge
+   Name=Blueforge
    Comment=Laser cutting and engraving
-   Exec=pires-forge
-   Icon=org.piresforge.pires-forge
+   Exec=blueforge
+   Icon=org.blueforge.blueforge
    Terminal=false
    Categories=Graphics;2DGraphics;VectorGraphics;Engineering;
    StartupNotify=true
-   StartupWMClass=org.piresforge.pires-forge
+   StartupWMClass=org.blueforge.blueforge
    EOF
    update-desktop-database ~/.local/share/applications
    ```
@@ -106,23 +106,23 @@ If you have the old `.deb` installed, either:
 
 ## Update check is silent
 
-The app update check defaults to **off** in Pires Forge. To opt in:
+The app update check defaults to **off** in Blueforge. To opt in:
 
-1. Open Pires Forge.
+1. Open Blueforge.
 2. Go to **Settings → Preferences → General**.
 3. Enable **Check for updates**.
 
 When enabled, the app queries the
-[Pires Forge releases](https://github.com/yuri-schmaltz/pires-forge/releases)
+[Blueforge releases](https://github.com/yuri-schmaltz/blueforge/releases)
 page (not the upstream Rayforge releases — those are for the
 upstream project, not the fork).
 
 ## G-code file won't open
 
-Pires Forge opens:
+Blueforge opens:
 
-- `.ryp` (Pires Forge / Rayforge project files)
-- `.rfs` (Pires Forge / Rayforge sketch files)
+- `.ryp` (Blueforge / Rayforge project files)
+- `.rfs` (Blueforge / Rayforge sketch files)
 - `.svg`, `.dxf`, `.pdf`, `.png`, `.jpg`, `.bmp` (import formats)
 - `.lbrn`, `.lbrn2` (LightBurn files, imported as new projects)
 - `.rd` (Ruida files, imported as new projects)
@@ -138,7 +138,7 @@ It does **not** open:
 
 ## Performance is slow on a large SVG
 
-Pires Forge parses the SVG to extract vector geometry, then converts
+Blueforge parses the SVG to extract vector geometry, then converts
 it to ops (laser commands). For files with many thousands of
 elements:
 
@@ -174,9 +174,9 @@ respecting: it never leaves your machine automatically.
 
 ## Still stuck?
 
-1. Check [open issues](https://github.com/yuri-schmaltz/pires-forge/issues)
+1. Check [open issues](https://github.com/yuri-schmaltz/blueforge/issues)
    for similar problems.
-2. [Open a new issue](https://github.com/yuri-schmaltz/pires-forge/issues/new/choose)
+2. [Open a new issue](https://github.com/yuri-schmaltz/blueforge/issues/new/choose)
    with the debug bundle attached.
 3. For sensitive bugs (security, data loss), email
    <security@yuri-schmaltz.dev> instead of opening a public issue.

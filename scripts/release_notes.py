@@ -61,8 +61,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--repo",
-        default="yuri-schmaltz/pires-forge",
-        help="GitHub repo (default: yuri-schmaltz/pires-forge).",
+        default="yuri-schmaltz/blueforge",
+        help="GitHub repo (default: yuri-schmaltz/blueforge).",
     )
     parser.add_argument(
         "--from-tag",

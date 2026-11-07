@@ -1,8 +1,9 @@
-site_name: Pires Forge
+# Build with `pixi run -e docs docs-build`; the runner stages root manuals.
+site_name: Blueforge
 site_description: A desktop application for laser cutting and engraving
 site_author: Yuri Schmaltz
 
-docs_dir: .
+docs_dir: docs
 site_dir: site
 
 theme:
@@ -31,12 +32,15 @@ nav:
   - Home: README.md
   - User Manual: USER_MANUAL.md
   - Developer Guide: DEVELOPER_GUIDE.md
-  - Roadmap & History: ROADMAP.md
-  - Process Journal: PROCESS_JOURNAL.md
+  - Documentation: docs/INDEX.md
+  - Project status: docs/PROJECT_STATUS.md
+  - Installation: docs/INSTALLATION.md
+  - Building: docs/BUILDING.md
+  - Release process: docs/RELEASE.md
   - Changelog: CHANGELOG.md
   - Support: SUPPORT.md
   - Contributing: CONTRIBUTING.md
-  - License: LICENSE
+  - License: LICENSE.md
 
 extra:
   generator: false

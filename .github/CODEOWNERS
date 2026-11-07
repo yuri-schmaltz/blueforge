@@ -19,7 +19,7 @@
 /.github/CODEOWNERS     @yuri-schmaltz
 /.github/SECURITY.md    @yuri-schmaltz
 /debian/                @yuri-schmaltz
-/pires-forge.spec       @yuri-schmaltz
+/blueforge.spec       @yuri-schmaltz
 /pyproject.toml         @yuri-schmaltz
 /pixi.toml              @yuri-schmaltz
 /MANIFEST.in            @yuri-schmaltz

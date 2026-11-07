@@ -1,5 +1,5 @@
 # EditorConfig is awesome: https://EditorConfig.org
-# Top-level config for the Pires Forge project. Per-language overrides
+# Top-level config for the Blueforge project. Per-language overrides
 # match the existing tool configurations (ruff, prettier, etc.).
 root = true
 

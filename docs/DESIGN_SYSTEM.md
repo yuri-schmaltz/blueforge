@@ -1,6 +1,6 @@
 # Design System
 
-This document describes the visual design system of Pires Forge:
+This document describes the visual design system of Blueforge:
 tokens, classes, components, and the rules for extending them.
 New contributors should read this before adding a new screen,
 dialog, or stylesheet rule.
@@ -8,7 +8,7 @@ dialog, or stylesheet rule.
 ## Brand
 
 The app's mark is the **"spark burst"** — a bright laser strike
-on a workpiece. See `rayforge/resources/icons/org.piresforge.pires-forge.svg`
+on a workpiece. See `rayforge/resources/icons/org.blueforge.blueforge.svg`
 for the canonical vector. The mark uses a radial gradient from
 white-hot (`#ffffff`) through yellow (`#fff4a3`, `#ffb000`) to
 deep orange (`#ff3d00`) on a near-black squircle (`#0a0a0a`,

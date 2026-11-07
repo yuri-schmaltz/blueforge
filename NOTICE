@@ -1,30 +1,30 @@
-Pires Forge
+Blueforge
 Copyright (c) 2025-2026 Yuri Schmaltz
 
 This product includes software developed by the original Rayforge
 project (https://github.com/barebaric/rayforge), copyright (c) 2025
 Samuel Abels and contributors.
 
-Pires Forge is a fork of the Rayforge codebase, rebranded and
+Blueforge is a fork of the Rayforge codebase, rebranded and
 maintained by Yuri Schmaltz. The rebrand changes the user-visible
 identity (display name, AppStream ID, .desktop, .metainfo, Debian
 package name, binary name) while keeping the Python module path,
 addon API, and project structure compatible with the original.
 
-Rebrand changes made for Pires Forge 1.0.0:
+Rebrand changes made for Blueforge 1.0.0:
 
 1. User-visible identity:
-   - Display name: Rayforge → Pires Forge
-   - AppStream ID: org.rayforge.rayforge → org.piresforge.pires-forge
-   - MIME types: application/x-rayforge-* → application/x-piresforge-*
-   - Debian package: rayforge → pires-forge
-   - Binary entry point: rayforge → pires-forge
-   - macOS bundle: Rayforge.app → Pires Forge.app
-   - Windows bundle: rayforge-v* → pires-forge-v*
-   - NSIS installer product name: Rayforge → Pires Forge
+   - Display name: Rayforge → Blueforge
+   - AppStream ID: org.rayforge.rayforge → org.blueforge.blueforge
+   - MIME types: application/x-rayforge-* → application/x-blueforge-*
+   - Debian package: rayforge → blueforge
+   - Binary entry point: rayforge → blueforge
+   - macOS bundle: Rayforge.app → Blueforge.app
+   - Windows bundle: rayforge-v* → blueforge-v*
+   - NSIS installer product name: Rayforge → Blueforge
 
 2. Code and metadata:
-   - All GitHub URLs point to yuri-schmaltz/pires-forge
+   - All GitHub URLs point to yuri-schmaltz/blueforge
    - Application update check defaults to off
    - defusedxml runtime dependency for untrusted XML parsing
    - Security hardening via bandit gates and supply-chain checks
@@ -37,4 +37,4 @@ Rebrand changes made for Pires Forge 1.0.0:
    - Addon names: rayforge-addon-* (for cross-fork compatibility)
 
 For the full list of changes, see CHANGELOG.md and the git log
-of the yuri-schmaltz/pires-forge repository.
+of the yuri-schmaltz/blueforge repository.

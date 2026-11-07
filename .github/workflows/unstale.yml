@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   remove-stale-label:
-    if: github.repository == 'yuri-schmaltz/pires-forge'
+    if: github.repository == 'yuri-schmaltz/blueforge'
     runs-on: ubuntu-latest
     permissions:
       issues: write

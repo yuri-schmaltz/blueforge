@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-commit hook for Pires Forge.
+# Pre-commit hook for Blueforge.
 #
 # Installed via: git config core.hooksPath .githooks
 #

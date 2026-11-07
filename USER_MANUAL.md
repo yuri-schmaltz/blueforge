@@ -1,6 +1,6 @@
-# Pires Forge — User Manual
+# Blueforge — User Manual
 
-Pires Forge is a desktop application for designing and
+Blueforge is a desktop application for designing and
 producing laser / CNC cuts. It started as a fork of
 [Rayforge](https://github.com/barebaric/rayforge) and
 has been progressively modernized.
@@ -16,7 +16,7 @@ send the job to a connected machine. If you're a
 ## Table of contents
 
 1. [Getting started](#1-getting-started)
-2. [The main window](#2-the-main-window)
+2. [The main window](#2-the-main-window-parametric-cad-studio)
 3. [Importing and editing](#3-importing-and-editing)
 4. [Operations and workflows](#4-operations-and-workflows)
 5. [Sending jobs to the machine](#5-sending-jobs-to-the-machine)
@@ -33,12 +33,12 @@ send the job to a connected machine. If you're a
 - Linux (X11 or Wayland), macOS, or Windows 10+
 - 4 GB RAM minimum, 8 GB recommended for large designs
 - A connected GRBL / Ruida / Smoothieware-compatible
-  machine (or just a file — Pires Forge is useful even
+  machine (or just a file — Blueforge is useful even
   without hardware)
 
 ### 1.2 First launch
 
-The first time you open Pires Forge, a 5-card walkthrough
+The first time you open Blueforge, a 5-card walkthrough
 introduces the main UI zones:
 
   1. **Canvas** — your work area
@@ -96,11 +96,11 @@ to explore the UI without hardware.
 
 ### 2.1 CAD Tool Palette (Left Strip)
 
-The vertical CAD tool palette gives instant access to drawing and vector CAM tools:
-- **Select / Transform (`S`)**: Select, translate, scale, and rotate objects.
-- **Edit Nodes (`N`)**: Manipulate path vertices and spline control points.
-- **Parametric Shapes**: Rectangle (`R`), Rounded Rect (Fillet), Circle (`C`), 3-Point Arc (`A`), Polyline (`P`), Bezier Spline (`B`), and Laser Typography (`T`).
-- **CAM Tools**: Kerf Offset / Contour Expansion, Holding Tabs (Bridge Placer), and Measurement Caliper.
+The palette provides entry points into selection, sketch editing, new
+sketch creation, holding tabs and the CAD inspector. Shape buttons open
+the sketch editor; select the drawing tool there. The palette does not
+yet select each corresponding sketch tool automatically. Measurement is
+not connected in the palette.
 
 ### 2.2 Contextual CAD Ribbon (Top)
 
@@ -113,17 +113,17 @@ Located above the canvas, the ribbon activates when items are selected:
 ### 2.3 The "CAD & Kerf" Inspector (Right Pane)
 
 Dedicated tab for manufacturing and CAM configuration:
-- **Parametric Geometry**: Exact X, Y position, Width, Height, and Corner Fillet radius.
-- **Beam Kerf Compensation**: Presets for Fiber (0.05 mm), Diode (0.12 mm), and CO2 (0.20 mm), plus custom kerf diameters and Cut Side compensation (Outside / Male, Inside / Female, On Path).
-- **Holding Tabs**: Configure bridge width and place automatic tabs to prevent loose parts from tipping into the honeycomb bed.
-- **Lead-In / Lead-Out**: Off-contour piercing (Linear or Arc) to eliminate burn dwell marks.
+- **Parametric Geometry**: Exact X and Y in machine coordinates, Width, Height, and absolute Rotation. Dimensions preserve the aspect ratio in this inspector. Corner fillet is disabled here; edit geometry in the sketch editor.
+- **Beam Kerf Compensation** (first contour operation in the active layer): Presets for Fiber (0.05 mm), Diode (0.12 mm), and CO2 (0.20 mm), plus custom kerf diameters and Cut Side compensation (Outside / Male, Inside / Female, On Path).
+- **Holding Tabs**: Place automatic cardinal tabs. The width field in this inspector is disabled; configure dimensions in item properties.
+- **Lead-In / Lead-Out**: The controls are disabled until they are connected to the toolpath pipeline.
 
 ### 2.4 Operations Timeline (Bottom Panel)
 
-The **Timeline** tab displays all machining passes in execution order:
-- Cards showing pass number, operation type (Engrave, Score, Cut, Frame), power/speed chips, and pass count.
+The **Timeline** tab displays the active layer’s operations in execution order:
+- Cards showing pass number, operation type (Engrave, Score, Cut, Frame), power and speed chips.
 - Reorder buttons (Move Earlier / Later in sequence).
-- **Auto-Optimize Safe Sequence**: Automatically sorts operations (1. Engrave ➔ 2. Score ➔ 3. Inner Holes ➔ 4. Outer Contours) to eliminate piece fallout risks.
+- **Sort Operations by Type**: Groups engraving, scoring, and contour operations in the active layer. This does not classify individual holes or guarantee a safe machining sequence; inspect the generated toolpaths before sending.
 
 ### 2.5 Panel layouts
 
@@ -166,7 +166,7 @@ Switch between four tabs:
 | DXF | CAD drawings |
 | PNG / JPG | raster (auto-vectorized) |
 | PDF | multi-page vector |
-| existing Pires Forge / Rayforge files | round-trip |
+| existing Blueforge / Rayforge files | round-trip |
 
 ### 3.2 The import wizard
 
@@ -332,23 +332,23 @@ fresh measurement.
 
 ### 8.2 "The walkthrough won't stop showing"
 
-Open `~/.config/pires-forge/config.yaml` and set
+Open `~/.config/rayforge/config.yaml` and set
 `walkthrough_seen: true`. (Or click Done on the
 walkthrough dialog.)
 
 ### 8.3 "Reset all my preferences"
 
-Delete `~/.config/pires-forge/`. The next launch will
+Delete `~/.config/rayforge/`. The next launch will
 re-create it with default values. Note: this also
 deletes your machine configurations.
 
 ### 8.4 "The status bar is in the wrong language"
 
-Pires Forge uses your system locale. Override with
+Blueforge uses your system locale. Override with
 the `LANGUAGE` environment variable:
 
 ```sh
-LANGUAGE=pt_BR pires-forge
+LANGUAGE=pt_BR blueforge
 ```
 
 Available locales: en, de, es, fr, pt, uk, zh_CN.
@@ -365,11 +365,11 @@ Available locales: en, de, es, fr, pt, uk, zh_CN.
 
 ## License
 
-Pires Forge is open-source software, licensed under the
-GPL-3.0. See [LICENSE](LICENSE) for the full text.
+Blueforge is open-source software, licensed under the
+MIT. See [LICENSE](LICENSE) for the full text.
 
 ## Contributing
 
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for the
 developer manual. Bug reports and feature requests go
-to the [GitHub issue tracker](https://github.com/yuri-schmaltz/pires-forge/issues).
+to the [GitHub issue tracker](https://github.com/yuri-schmaltz/blueforge/issues).

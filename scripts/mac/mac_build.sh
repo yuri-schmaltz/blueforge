@@ -30,7 +30,7 @@ done
 
 echo ""
 print_info "======================================"
-print_info "    Pires Forge macOS Build Script"
+print_info "    Blueforge macOS Build Script"
 print_info "======================================"
 echo ""
 echo "Select build option:"
@@ -69,7 +69,7 @@ case "$BUILD_CHOICE" in
 esac
 
 if (( DO_RUN_APP == 1 )); then
-    APP_BIN="./dist/PiresForge.app/Contents/MacOS/PiresForge"
+    APP_BIN="./dist/Blueforge.app/Contents/MacOS/Blueforge"
     if [ ! -x "$APP_BIN" ]; then
         echo "$APP_BIN not found or not executable." >&2
         echo "Build the app bundle first (option 2)." >&2
@@ -167,8 +167,8 @@ if (( DO_BUILD == 1 )); then
     print_info "--------------------------------------"
     echo ""
     "$VENV_PY" -m build
-elif [ -d "dist/PiresForge.app" ] && (( DO_BUNDLE == 0 )); then
-    echo "Note: dist/PiresForge.app exists but was not rebuilt." >&2
+elif [ -d "dist/Blueforge.app" ] && (( DO_BUNDLE == 0 )); then
+    echo "Note: dist/Blueforge.app exists but was not rebuilt." >&2
 fi
 
 if (( DO_BUNDLE == 1 )); then
@@ -190,20 +190,20 @@ def _onerror(func, path, exc_info):
     except Exception:
         pass
 
-for target in ("dist/PiresForge", "dist/PiresForge.app"):
+for target in ("dist/Blueforge", "dist/Blueforge.app"):
     path = Path(target)
     if path.exists():
         shutil.rmtree(path, onerror=_onerror)
 PY
 
     # Compile .icon → Assets.car (macOS 26+ Liquid Glass icon format).
-    # Falls back to legacy .icns if rayforge.icon is not present.
+    # Falls back to legacy .icns if blueforge.icon is not present.
     ICON_SOURCE=""
-    if [ -d "rayforge/resources/icons/rayforge.icon" ]; then
-        echo "Compiling rayforge.icon → Assets.car..."
-        if ! xcrun actool rayforge/resources/icons/rayforge.icon \
+    if [ -d "rayforge/resources/icons/blueforge.icon" ]; then
+        echo "Compiling blueforge.icon → Assets.car..."
+        if ! xcrun actool rayforge/resources/icons/blueforge.icon \
                 --compile "$(pwd)" \
-               --app-icon pires-forge \
+               --app-icon blueforge \
                 --platform macosx \
                 --target-device mac \
                 --minimum-deployment-target 10.14 \
@@ -215,32 +215,32 @@ PY
             ICON_SOURCE="car"
         fi
     else
-        echo "rayforge.icon not found, using legacy .icns path."
+        echo "blueforge.icon not found, using legacy .icns path."
         ICON_SOURCE="icns"
     fi
 
     # Always ensure rayforge.icns exists at the project root as a
-    # safety net. PyInstaller's pires-forge.spec falls back to rayforge.icns
+    # safety net. PyInstaller's blueforge.spec falls back to rayforge.icns
     # when Assets.car is missing, and we've seen actool "succeed" with
     # empty output-files in some CI environments, leaving PyInstaller
     # to error with "rayforge.icns not found". Generating the .icns
     # unconditionally is cheap (~2s) and prevents that failure mode.
     if [ ! -f "rayforge.icns" ] || \
-       [ "rayforge/resources/icons/org.piresforge.pires-forge.svg" -nt "rayforge.icns" ]; then
+       [ "rayforge/resources/icons/org.blueforge.blueforge.svg" -nt "rayforge.icns" ]; then
         echo "Generating macOS icon (.icns)..."
         bash scripts/mac/mac_create_icon.sh
     else
         echo "rayforge.icns is up to date, skipping generation."
     fi
 
-    "$VENV_PY" -m PyInstaller --clean --noconfirm pires-forge.spec
+    "$VENV_PY" -m PyInstaller --clean --noconfirm blueforge.spec
 
-    APP_ROOT="dist/PiresForge.app/Contents"
+    APP_ROOT="dist/Blueforge.app/Contents"
     FW_DIR="$APP_ROOT/Frameworks"
     BIN_DIR="$APP_ROOT/MacOS"
     RES_DIR="$APP_ROOT/Resources"
 
-    chmod -R u+w "dist/PiresForge.app" || true
+    chmod -R u+w "dist/Blueforge.app" || true
 
     # Copy Assets.car into Resources and set CFBundleIconName in Info.plist.
     # This is what tells macOS to use the Liquid Glass .icon instead of .icns.
@@ -249,9 +249,9 @@ PY
         cp "Assets.car" "$RES_DIR/Assets.car"
         /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" \
             "$APP_ROOT/Info.plist" 2>/dev/null || true
-        /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string pires-forge" \
+        /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string blueforge" \
             "$APP_ROOT/Info.plist" 2>/dev/null || \
-        /usr/libexec/PlistBuddy -c "Set :CFBundleIconName pires-forge" \
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIconName blueforge" \
             "$APP_ROOT/Info.plist" 2>/dev/null || true
     fi
 
@@ -259,27 +259,27 @@ PY
     rm -f "$FW_DIR/libiconv.2.dylib"
 
     # Replace the launcher with a wrapper that sets env vars,
-    # keeping the Mach-O as PiresForge.bin.
-    if [ -f "$BIN_DIR/PiresForge" ] && [ ! -f "$BIN_DIR/PiresForge.bin" ]; then
-        if file "$BIN_DIR/PiresForge" | grep -q "Mach-O"; then
-            mv "$BIN_DIR/PiresForge" "$BIN_DIR/PiresForge.bin"
+    # keeping the Mach-O as Blueforge.bin.
+    if [ -f "$BIN_DIR/Blueforge" ] && [ ! -f "$BIN_DIR/Blueforge.bin" ]; then
+        if file "$BIN_DIR/Blueforge" | grep -q "Mach-O"; then
+            mv "$BIN_DIR/Blueforge" "$BIN_DIR/Blueforge.bin"
         else
-            cp "$BIN_DIR/PiresForge" "$BIN_DIR/PiresForge.bin"
+            cp "$BIN_DIR/Blueforge" "$BIN_DIR/Blueforge.bin"
         fi
     fi
-    if [ -f "$BIN_DIR/PiresForge.bin" ]; then
-        cat > "$BIN_DIR/PiresForge" <<'SH'
+    if [ -f "$BIN_DIR/Blueforge.bin" ]; then
+        cat > "$BIN_DIR/Blueforge" <<'SH'
 #!/bin/bash
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export DYLD_LIBRARY_PATH="$APP_DIR/Frameworks"
 export DYLD_FALLBACK_LIBRARY_PATH="$APP_DIR/Frameworks"
 export GI_TYPELIB_PATH="$APP_DIR/Resources/gi_typelibs"
 export GIO_EXTRA_MODULES="$APP_DIR/Frameworks/gio_modules"
-exec "$APP_DIR/MacOS/PiresForge.bin" "$@"
+exec "$APP_DIR/MacOS/Blueforge.bin" "$@"
 SH
-        chmod +x "$BIN_DIR/PiresForge"
+        chmod +x "$BIN_DIR/Blueforge"
         install_name_tool -add_rpath @executable_path/../Frameworks \
-            "$BIN_DIR/PiresForge.bin" 2>/dev/null || true
+            "$BIN_DIR/Blueforge.bin" 2>/dev/null || true
     fi
 
     BREW_PREFIX=""
@@ -444,7 +444,7 @@ SH
                     "$FW_DIR/$libname"
                 changed=1
             fi
-        done < <(otool -L "$BIN_DIR/PiresForge" "$FW_DIR"/*.dylib 2>/dev/null | \
+        done < <(otool -L "$BIN_DIR/Blueforge" "$FW_DIR"/*.dylib 2>/dev/null | \
             awk '{print $1}' | \
             grep -E '^/usr/local/|^/opt/homebrew/|^@rpath/' | \
             sort -u || true)
@@ -470,7 +470,7 @@ SH
                 fi
             done || true
         done
-        for bin in "$BIN_DIR/PiresForge" "$BIN_DIR/PiresForge.bin"; do
+        for bin in "$BIN_DIR/Blueforge" "$BIN_DIR/Blueforge.bin"; do
             [ -f "$bin" ] || continue
             if ! file "$bin" | grep -q "Mach-O"; then
                 continue
@@ -485,7 +485,7 @@ SH
         done
 
         # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
-        for target in "$FW_DIR"/*.dylib "$BIN_DIR/PiresForge.bin"; do
+        for target in "$FW_DIR"/*.dylib "$BIN_DIR/Blueforge.bin"; do
             [ -f "$target" ] || continue
             otool -L "$target" | awk '{print $1}' | \
                 grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
@@ -538,7 +538,7 @@ SH
     # Re-sign after install_name_tool and dylib rewrites to keep
     # macOS code-signing validation valid on Apple Silicon.
     if [ "$(uname -m)" = "arm64" ]; then
-        APP_BUNDLE="$(pwd)/dist/PiresForge.app"
+        APP_BUNDLE="$(pwd)/dist/Blueforge.app"
         echo "Re-signing app bundle..."
         if [ ! -d "$APP_BUNDLE" ]; then
             echo "App bundle not found at $APP_BUNDLE" >&2
@@ -564,7 +564,7 @@ SH
     # fi
 
     # Make sure the plist still points to the wrapper.
-    /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable Pires Forge" \
+    /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable Blueforge" \
         "$APP_ROOT/Info.plist" 2>/dev/null || true
 
     echo "Cleaning dist/*.whl and dist/*.gz after app bundle..."
@@ -578,26 +578,26 @@ if (( DO_DMG == 1 )); then
     print_info "--------------------------------------"
     echo ""
     echo "Creating DMG..."
-    if [ ! -d "dist/PiresForge.app" ]; then
-        echo "dist/PiresForge.app not found.\nBuild the app bundle first." >&2
+    if [ ! -d "dist/Blueforge.app" ]; then
+        echo "dist/Blueforge.app not found.\nBuild the app bundle first." >&2
         exit 1
     fi
-    DMG_PATH="dist/PiresForge_${VERSION}.dmg"
+    DMG_PATH="dist/Blueforge_${VERSION}.dmg"
     rm -f "$DMG_PATH"
-    hdiutil create -volname "PiresForge" -srcfolder "dist/PiresForge.app" \
+    hdiutil create -volname "Blueforge" -srcfolder "dist/Blueforge.app" \
         -ov -format UDZO "$DMG_PATH"
 fi
 
 if (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )) && (( DO_DMG == 1 )); then
-    echo "Build artifacts created in dist/, dist/*.whl, dist/PiresForge.app, and dist/PiresForge.dmg"
+    echo "Build artifacts created in dist/, dist/*.whl, dist/Blueforge.app, and dist/Blueforge.dmg"
 elif (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )); then
-    echo "Build artifacts created in dist/, dist/*.whl, and dist/PiresForge.app"
+    echo "Build artifacts created in dist/, dist/*.whl, and dist/Blueforge.app"
 elif (( DO_BUILD == 1 )); then
     echo "Build artifacts created in dist/ and dist/*.whl"
 elif (( DO_BUNDLE == 1 )); then
-    echo "App bundle created in dist/PiresForge.app"
+    echo "App bundle created in dist/Blueforge.app"
 elif (( DO_DMG == 1 )); then
-    echo "DMG created in dist/PiresForge.dmg"
+    echo "DMG created in dist/Blueforge.dmg"
 fi
 
 echo ""

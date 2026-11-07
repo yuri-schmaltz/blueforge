@@ -1,5 +1,5 @@
 [project]
-name = "pires-forge"
+name = "blueforge"
 dynamic = ["version"]
 dependencies = []
 authors = [
@@ -17,15 +17,15 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yuri-schmaltz/pires-forge"
-"Bug Tracker" = "https://github.com/yuri-schmaltz/pires-forge/issues"
+"Homepage" = "https://github.com/yuri-schmaltz/blueforge"
+"Bug Tracker" = "https://github.com/yuri-schmaltz/blueforge/issues"
 
 [project.gui-scripts]
-pires-forge = "rayforge.app:main"
+blueforge = "rayforge.app:main"
 
 [build-system]
 requires = [
-  "setuptools >= 40.9.0", "setuptools-git-versioning"
+  "setuptools >= 61"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -34,9 +34,6 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 include = ["rayforge*"]
-
-[tool.setuptools-git-versioning]
-enabled = false
 
 [tool.ruff]
 lint = { ignore = ["E203"] }
@@ -48,6 +45,17 @@ quote-style = "double"
 
 [tool.pyright]
 stubPath = "typings"
+# The builtin addon packages live next to each other in
+# rayforge/builtin_addons/<addon>/<package>. The root
+# conftest.py puts those directories on sys.path at runtime;
+# mirror that here so the type checker resolves them too.
+extraPaths = [
+    "rayforge/builtin_addons/rayforge-addon-laser",
+    "rayforge/builtin_addons/rayforge-addon-materials",
+    "rayforge/builtin_addons/rayforge-addon-post",
+    "rayforge/builtin_addons/rayforge-addon-print-and-cut",
+    "rayforge/builtin_addons/rayforge-addon-sketcher",
+]
 reportMissingModuleSource = false
 include = [
     "rayforge",
@@ -59,18 +67,21 @@ include = [
 [tool.mypy]
 mypy_path = "stubs"
 
+[tool.setuptools.dynamic]
+version = {attr = "rayforge.version.SOURCE_VERSION"}
+
 [tool.setuptools.data-files]
-"share/applications" = ["data/org.piresforge.pires-forge.desktop"]
-"share/metainfo" = ["data/org.piresforge.pires-forge.metainfo.xml"]
-"share/mime/packages" = ["data/org.piresforge.pires-forge.xml"]
-"share/icons/hicolor/scalable/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.svg"]
-"share/icons/hicolor/512x512/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.png"]
-"share/icons/hicolor/256x256/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.png"]
-"share/icons/hicolor/128x128/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.png"]
-"share/icons/hicolor/64x64/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.png"]
-"share/icons/hicolor/48x48/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.png"]
-"share/icons/hicolor/32x32/apps" = ["rayforge/resources/icons/org.piresforge.pires-forge.png"]
-"share/pires-forge/splash" = ["data/splash/splash.svg", "data/splash/README.md"]
+"share/applications" = ["data/org.blueforge.blueforge.desktop"]
+"share/metainfo" = ["data/org.blueforge.blueforge.metainfo.xml"]
+"share/mime/packages" = ["data/org.blueforge.blueforge.xml"]
+"share/icons/hicolor/scalable/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.svg"]
+"share/icons/hicolor/512x512/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.png"]
+"share/icons/hicolor/256x256/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.png"]
+"share/icons/hicolor/128x128/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.png"]
+"share/icons/hicolor/64x64/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.png"]
+"share/icons/hicolor/48x48/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.png"]
+"share/icons/hicolor/32x32/apps" = ["rayforge/resources/icons/org.blueforge.blueforge.png"]
+"share/blueforge/splash" = ["data/splash/splash.svg", "data/splash/README.md"]
 
 [project.optional-dependencies]
 test = [

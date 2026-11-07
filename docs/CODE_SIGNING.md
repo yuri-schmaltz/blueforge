@@ -1,7 +1,7 @@
 # Code Signing Setup Guide
 
 This document explains how to set up code signing for
-[Pires Forge](https://github.com/yuri-schmaltz/pires-forge). The
+[Blueforge](https://github.com/yuri-schmaltz/blueforge). The
 fork does **not** sign its binaries by default (the maintainer
 doesn't have the signing certificates), which means:
 
@@ -144,7 +144,7 @@ spctl --assess --type execute --verbose=2 Rayforge.app
 
 3. **Configure `debsign` and `dput`** on the CI runner. The
    `.github/workflows/sign.yml` workflow already calls `debsign`
-   and `dput ppa:yuri-schmaltz/pires-forge` on the built
+   and `dput ppa:yuri-schmaltz/blueforge` on the built
    `.changes` file.
 
 4. **Add the secrets**:
@@ -157,7 +157,7 @@ spctl --assess --type execute --verbose=2 Rayforge.app
 
 ## What the fork does today
 
-Pires Forge `1.0.0` is **unsigned**. This is documented in the
+Blueforge `1.0.0` is **unsigned**. This is documented in the
 release notes. Users see the appropriate platform warnings
 (SmartScreen, Gatekeeper, apt untrusted).
 

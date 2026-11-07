@@ -1,72 +1,143 @@
 # Changelog
 
-All notable changes to **Pires Forge** will be documented in this
+All notable changes to **Blueforge** will be documented in this
 file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Pires Forge is a fork of the [Rayforge](https://github.com/barebaric/rayforge)
+Blueforge is a fork of the [Rayforge](https://github.com/barebaric/rayforge)
 project. The rebrand was completed in 1.0.0. For the upstream history
 prior to the fork, see the Rayforge repository.
 
-## [1.0.1] - 2026-08-04
-
-### Security
-
-- **SHA-1 cache key replaced with SHA-256** in
-  `rayforge/pipeline/intent_builder.py:_hash_int`. The
-  `usedforsecurity=False` argument silenced bandit/ruff
-  B324/S324 but did not satisfy CodeQL's
-  `py/weak-cryptographic-hashing-algorithm` rule, which
-  was the last open CodeQL HIGH alert on the repo. The
-  function only consumes the first 8 bytes of the digest,
-  so SHA-256 is a drop-in replacement with no change in
-  cache-key behaviour.
-- **aiohttp bumped 3.14.1 → 3.14.3** — closes
-  CVE-2026-69244 (out-of-bounds heap read in the C HTTP
-  response parser error path; a malformed chunked
-  response can crash the client) and the WebSocket
-  permessage-deflate / HTTP-smuggling advisories.
-- **GitPython bumped 3.1.55 → 3.1.57** — closes the
-  `Repo.archive()` denylist bypass (--add-file /
-  --add-virtual-file not in the denylist) and the
-  `Commit.count` rev-list `--output` argument-injection
-  primitive. CVE fixes shipped across 3.1.55 and 3.1.57.
-- **Explicit `permissions: contents: read` on every
-  GitHub Actions workflow** — closes 18 of the
-  `Workflow does not contain permissions` CodeQL alerts.
-  Defence-in-depth: a compromised step no longer has
-  implicit repo-write power. Job-level write overrides
-  preserved where needed (release upload, PyPI OIDC,
-  stale-issue labelling).
-- **Replaced GitHub's "Default" CodeQL setup** with an
-  explicit `.github/workflows/codeql.yml`. The default
-  setup was showing the "CodeQL is reporting errors"
-  banner; the new workflow runs
-  `security-extended + security-and-quality` query packs
-  with `build-mode: none` (rayforge is a flat import tree).
+## [Unreleased]
 
 ### Fixed
 
-- **verify-snap.yml step names containing colons were
-  failing workflow validation** — `Smoke test: --help`,
-  `Smoke test: --version`, and `Smoke test: launch
-  headless` are now quoted (`"Smoke test: --help"`).
-  Closes a stray 'failure' that appeared on every PR
-  touching workflows after the explicit-permissions PR
-  landed.
+- Connect CAD geometry controls to undoable editor commands and synchronize
+  dimensions and angles across panels using machine coordinates.
+- Apply contour kerf, cut side and overcut through undoable model updates.
+- Disable inspector controls that are not connected to editing commands.
+- Include OpenCV in the locked Pixi runtime environment.
+- Build documentation with a dedicated MkDocs environment.
+- Correct development, packaging, license and repository references.
+- Provide a source version for Python package metadata without Git tags.
+- Fix GTK shortcuts and first-run tour construction, navigation and dismissal.
+- Keep test configurations isolated and throttle simulated serial polling.
+- Check translation catalogs without rewriting tracked files; refresh templates.
+- Regenerate `pixi.lock` so it matches the manifest. The lock still carried
+  the removed `website` environment, which made every `setup-pixi` step
+  with `frozen: true` fail with "lock-file not up-to-date" and kept the
+  whole CI pipeline red since 2026-08-04.
+- Resolve the workspace configuration directory. The dockable layout and the
+  workspace menu imported a `config_dir` symbol that `rayforge.config` does
+  not export, so loading or saving a workspace always raised `ImportError`
+  and was silently swallowed.
+- Import the runtime context from `rayforge.context` in the insights panel
+  and in the benchmark runner. `rayforge.core.config` exposes no
+  `get_context`, and `rayforge.config` exposes no `init_context`, so both
+  call sites raised `ImportError` at runtime.
+- Fix the `bench_i18n_lookup` benchmark, which shadowed the gettext alias
+  with the loop variable and raised `TypeError: 'int' object is not
+  callable` on every invocation.
+- Make the lint gate pass end to end: flake8, pyflakes and pyright now
+  report zero findings across `rayforge/` and `tests/`.
 
-### Internal
+### Changed
 
-- 4 new unit tests in `tests/pipeline/test_intent_builder.py`:
-  - `test_hash_int_uses_sha256` — canary spy on
-    `hashlib.sha256` to guard against future revert to SHA-1.
-  - `test_hash_int_is_deterministic` — same payload → same int.
-  - `test_hash_int_is_63bit_positive` — result in `[0, 2^63)`.
-  - `test_hash_int_key_order_does_not_matter` — canonical-JSON
-    contract (keys sorted, dict order irrelevant).
-- All 25 GitHub security alerts (3 HIGH + 22 MED) closed
-  as of this release. `pip-audit` reports 0 vulnerabilities
-  on the locked dependency tree.
+- Rebuild the accessibility description fallback so the tooltip is used as
+  the description when no explicit description is supplied, and report the
+  live-region property through the GTK 4 property system.
+- Attach the insights-panel section rows with `Gtk.ListBox.append` and use
+  `Pango.EllipsizeMode.END` instead of the numeric GTK 3 constant.
+- Teach the type checker about the builtin addon package roots, mirroring
+  the `sys.path` setup that the root `conftest.py` performs at runtime.
+
+## [1.3.3] - 2026-08-07
+
+### Fixed (startup chain v1.3.2 hotfix batch)
+
+A sequence of six startup-blocking bugs were fixed in v1.3.2
+post-release, each one shipping as a re-tagged v1.3.2 .deb
+after the previous one was found to crash on real user
+installs. They are consolidated here under v1.3.3 so the
+changelog reflects what actually shipped to users.
+
+- **`rayforge/ui_gtk/splash.py`** — removed
+  `Gtk.Window.move()`, `set_skip_taskbar_hint()`,
+  `set_skip_pager_hint()`, and `set_focus_on_map()`. All four
+  are Gtk 3 APIs removed in Gtk 4. The splash is now
+  positioned by the window manager (Mutter/KWin auto-centre
+  borderless non-modal windows); the `realize` callback
+  logs the computed centre for debugging instead of forcing
+  it.
+- **`rayforge/ui_gtk/splash.py`** — the splash screen
+  itself was removed at user request after three separate
+  Gtk 3→4 regressions. `app.do_activate` no longer imports
+  or presents `SplashScreen`; `self._splash = None` is set
+  for idempotency. The `splash.py` module is left in the
+  tree (not deleted) in case it is revived later as part
+  of a larger splash + startup-trace CI effort.
+- **`rayforge/ui_gtk/coordinate_bar.py`** — added missing
+  `from ..shared.util.localized import _`. The module's
+  `__init__` uses `_(...)` for the unit combo tooltip and
+  a11y labels but only had function-local imports in
+  `update_*` methods that don't run on first construct.
+- **`rayforge/ui_gtk/status_bar.py`** — same fix as
+  coordinate_bar: added the missing `_` import.
+- **`rayforge/ui_gtk/command_palette.py`** — same fix;
+  latent (only fires when the user opens Ctrl+Shift+P).
+- **`rayforge/ui_gtk/walkthrough.py`** — same fix;
+  latent (only fires on first run or Help → Reopen tour).
+- **`rayforge/doceditor/editor.py`** — added the missing
+  `_` import; the `_on_addon_state_changed` signal
+  callback uses `_(...)` in a `logger.info()`.
+- **`rayforge/addon_mgr/addon_manager.py:626`** — fixed
+  `self._addon_config` (renamed to `self.addon_config` in
+  PR #75 P2 batch, but the call site at line 626 was
+  missed). The error was non-fatal (each addon import is
+  wrapped in try/except) but emitted a warning per addon.
+- **`rayforge/version.py:50`** — `get_version_from_pkg()`
+  now tries both `rayforge` and `blueforge` (the Debian
+  package name) and strips the leading `v` plus any Debian
+  revision suffix. Previously returned `None` on .deb
+  installs, emitting a "Could not determine current
+  rayforge version" warning at every addon import.
+- **`rayforge/ui_gtk/splash.py:142`** — `_center_on_primary_monitor`
+  no longer calls `self.move()`; logs the computed centre
+  instead (the WM will position the borderless window).
+- **`rayforge/shared/util/a11y.py:44`** — `Gtk.AccessibleRole.TEXT`
+  renamed to `Gtk.AccessibleRole.TEXT_BOX` in Gtk 4. The
+  `ROLE_TEXT` constant was still using the Gtk 3 name.
+- **`rayforge/ui_gtk/toolbar.py:44`** — broken relative
+  import `from .shared.util.a11y` fixed to
+  `from ..shared.util.a11y`. The single-dot prefix was
+  looking for `rayforge/ui_gtk/shared/util/a11y.py` which
+  doesn't exist (the `shared/util/` package lives at the
+  `rayforge/shared/` level, not `rayforge/ui_gtk/shared/`).
+- **`rayforge/ui_gtk/command_palette.py:118`** — same
+  fix as toolbar.py (latent, only fires on Ctrl+Shift+P).
+- **`rayforge/ui_gtk/mainwindow.py:515`** — `right_pane_stack.add(child, name, title)`
+  is invalid for `Adw.ViewStack`. The correct API is
+  `add_titled(child, name, title)`. Fixed both workflow
+  and properties entries.
+- **`rayforge/ui_gtk/mainwindow.py:1763`** — `refresh_previews`
+  now guards with `if not hasattr(self, "bottom_panel"): return`.
+  The `document_settled` signal is connected in
+  `__init__` (line 400) before `self.bottom_panel` is
+  created (line 588); the signal fires immediately when
+  the doceditor adds its default "Contorno" step during
+  `__init__`, so the callback would crash with
+  `AttributeError: 'MainWindow' object has no attribute 'bottom_panel'`.
+
+### Added
+
+- **`.github/workflows/quality.yml`** — new `smoke-import`
+  job that installs `pixi` + `gi`/`cairo`/`gtk4` system
+  deps and runs `python3 -c "import rayforge; from
+  rayforge.ui_gtk.splash import SplashScreen"` under
+  `xvfb-run`. Catches the class of bug that v1.3.0 and
+  v1.3.1 both shipped (ImportError + AttributeError on
+  Gtk 3→4 method removals in the startup chain).
+  Cost: ~5s per CI run.
 
 ## [1.1.0] - 2026-08-04
 
@@ -117,7 +188,7 @@ refresh. Security fixes from 1.0.1 are included.
   Layout persists across restarts.
 - **Local insights panel** (non-networked) — surfaces
   per-session stats: jobs run, runtime, most-used steps.
-  All data stays in `~/.config/pires-forge/insights.json`;
+  All data stays in `~/.config/rayforge/insights.json`;
   no analytics calls.
 - **In-process tracer** (`rayforge/util/tracing.py`) — opt-in
   via `RAYFORGE_TRACE=1`. Spans named regions (addon
@@ -270,110 +341,78 @@ refresh. Security fixes from 1.0.1 are included.
   step (renamed to `verify-snap.yml` in the file tree;
   the old inline YAML was consolidated).
 
-## [1.3.3] - 2026-08-07
+## [1.0.1] - 2026-08-04
 
-### Fixed (startup chain v1.3.2 hotfix batch)
+### Security
 
-A sequence of six startup-blocking bugs were fixed in v1.3.2
-post-release, each one shipping as a re-tagged v1.3.2 .deb
-after the previous one was found to crash on real user
-installs. They are consolidated here under v1.3.3 so the
-changelog reflects what actually shipped to users.
+- **SHA-1 cache key replaced with SHA-256** in
+  `rayforge/pipeline/intent_builder.py:_hash_int`. The
+  `usedforsecurity=False` argument silenced bandit/ruff
+  B324/S324 but did not satisfy CodeQL's
+  `py/weak-cryptographic-hashing-algorithm` rule, which
+  was the last open CodeQL HIGH alert on the repo. The
+  function only consumes the first 8 bytes of the digest,
+  so SHA-256 is a drop-in replacement with no change in
+  cache-key behaviour.
+- **aiohttp bumped 3.14.1 → 3.14.3** — closes
+  CVE-2026-69244 (out-of-bounds heap read in the C HTTP
+  response parser error path; a malformed chunked
+  response can crash the client) and the WebSocket
+  permessage-deflate / HTTP-smuggling advisories.
+- **GitPython bumped 3.1.55 → 3.1.57** — closes the
+  `Repo.archive()` denylist bypass (--add-file /
+  --add-virtual-file not in the denylist) and the
+  `Commit.count` rev-list `--output` argument-injection
+  primitive. CVE fixes shipped across 3.1.55 and 3.1.57.
+- **Explicit `permissions: contents: read` on every
+  GitHub Actions workflow** — closes 18 of the
+  `Workflow does not contain permissions` CodeQL alerts.
+  Defence-in-depth: a compromised step no longer has
+  implicit repo-write power. Job-level write overrides
+  preserved where needed (release upload, PyPI OIDC,
+  stale-issue labelling).
+- **Replaced GitHub's "Default" CodeQL setup** with an
+  explicit `.github/workflows/codeql.yml`. The default
+  setup was showing the "CodeQL is reporting errors"
+  banner; the new workflow runs
+  `security-extended + security-and-quality` query packs
+  with `build-mode: none` (rayforge is a flat import tree).
 
-- **`rayforge/ui_gtk/splash.py`** — removed
-  `Gtk.Window.move()`, `set_skip_taskbar_hint()`,
-  `set_skip_pager_hint()`, and `set_focus_on_map()`. All four
-  are Gtk 3 APIs removed in Gtk 4. The splash is now
-  positioned by the window manager (Mutter/KWin auto-centre
-  borderless non-modal windows); the `realize` callback
-  logs the computed centre for debugging instead of forcing
-  it.
-- **`rayforge/ui_gtk/splash.py`** — the splash screen
-  itself was removed at user request after three separate
-  Gtk 3→4 regressions. `app.do_activate` no longer imports
-  or presents `SplashScreen`; `self._splash = None` is set
-  for idempotency. The `splash.py` module is left in the
-  tree (not deleted) in case it is revived later as part
-  of a larger splash + startup-trace CI effort.
-- **`rayforge/ui_gtk/coordinate_bar.py`** — added missing
-  `from ..shared.util.localized import _`. The module's
-  `__init__` uses `_(...)` for the unit combo tooltip and
-  a11y labels but only had function-local imports in
-  `update_*` methods that don't run on first construct.
-- **`rayforge/ui_gtk/status_bar.py`** — same fix as
-  coordinate_bar: added the missing `_` import.
-- **`rayforge/ui_gtk/command_palette.py`** — same fix;
-  latent (only fires when the user opens Ctrl+Shift+P).
-- **`rayforge/ui_gtk/walkthrough.py`** — same fix;
-  latent (only fires on first run or Help → Reopen tour).
-- **`rayforge/doceditor/editor.py`** — added the missing
-  `_` import; the `_on_addon_state_changed` signal
-  callback uses `_(...)` in a `logger.info()`.
-- **`rayforge/addon_mgr/addon_manager.py:626`** — fixed
-  `self._addon_config` (renamed to `self.addon_config` in
-  PR #75 P2 batch, but the call site at line 626 was
-  missed). The error was non-fatal (each addon import is
-  wrapped in try/except) but emitted a warning per addon.
-- **`rayforge/version.py:50`** — `get_version_from_pkg()`
-  now tries both `rayforge` and `pires-forge` (the Debian
-  package name) and strips the leading `v` plus any Debian
-  revision suffix. Previously returned `None` on .deb
-  installs, emitting a "Could not determine current
-  rayforge version" warning at every addon import.
-- **`rayforge/ui_gtk/splash.py:142`** — `_center_on_primary_monitor`
-  no longer calls `self.move()`; logs the computed centre
-  instead (the WM will position the borderless window).
-- **`rayforge/shared/util/a11y.py:44`** — `Gtk.AccessibleRole.TEXT`
-  renamed to `Gtk.AccessibleRole.TEXT_BOX` in Gtk 4. The
-  `ROLE_TEXT` constant was still using the Gtk 3 name.
-- **`rayforge/ui_gtk/toolbar.py:44`** — broken relative
-  import `from .shared.util.a11y` fixed to
-  `from ..shared.util.a11y`. The single-dot prefix was
-  looking for `rayforge/ui_gtk/shared/util/a11y.py` which
-  doesn't exist (the `shared/util/` package lives at the
-  `rayforge/shared/` level, not `rayforge/ui_gtk/shared/`).
-- **`rayforge/ui_gtk/command_palette.py:118`** — same
-  fix as toolbar.py (latent, only fires on Ctrl+Shift+P).
-- **`rayforge/ui_gtk/mainwindow.py:515`** — `right_pane_stack.add(child, name, title)`
-  is invalid for `Adw.ViewStack`. The correct API is
-  `add_titled(child, name, title)`. Fixed both workflow
-  and properties entries.
-- **`rayforge/ui_gtk/mainwindow.py:1763`** — `refresh_previews`
-  now guards with `if not hasattr(self, "bottom_panel"): return`.
-  The `document_settled` signal is connected in
-  `__init__` (line 400) before `self.bottom_panel` is
-  created (line 588); the signal fires immediately when
-  the doceditor adds its default "Contorno" step during
-  `__init__`, so the callback would crash with
-  `AttributeError: 'MainWindow' object has no attribute 'bottom_panel'`.
+### Fixed
 
-### Added
+- **verify-snap.yml step names containing colons were
+  failing workflow validation** — `Smoke test: --help`,
+  `Smoke test: --version`, and `Smoke test: launch
+  headless` are now quoted (`"Smoke test: --help"`).
+  Closes a stray 'failure' that appeared on every PR
+  touching workflows after the explicit-permissions PR
+  landed.
 
-- **`.github/workflows/quality.yml`** — new `smoke-import`
-  job that installs `pixi` + `gi`/`cairo`/`gtk4` system
-  deps and runs `python3 -c "import rayforge; from
-  rayforge.ui_gtk.splash import SplashScreen"` under
-  `xvfb-run`. Catches the class of bug that v1.3.0 and
-  v1.3.1 both shipped (ImportError + AttributeError on
-  Gtk 3→4 method removals in the startup chain).
-  Cost: ~5s per CI run.
+### Internal
 
-## [Unreleased]
-
-## [1.0.0] - 2026-08-02
+- 4 new unit tests in `tests/pipeline/test_intent_builder.py`:
+  - `test_hash_int_uses_sha256` — canary spy on
+    `hashlib.sha256` to guard against future revert to SHA-1.
+  - `test_hash_int_is_deterministic` — same payload → same int.
+  - `test_hash_int_is_63bit_positive` — result in `[0, 2^63)`.
+  - `test_hash_int_key_order_does_not_matter` — canonical-JSON
+    contract (keys sorted, dict order irrelevant).
+- All 25 GitHub security alerts (3 HIGH + 22 MED) closed
+  as of this release. `pip-audit` reports 0 vulnerabilities
+  on the locked dependency tree.
 
 ## [1.0.0] - 2026-08-02
 
 ### Added
 
-- **Pires Forge rebrand** (PR #34 + 9 follow-up commits):
-  - Display name: `Rayforge` → `Pires Forge`
-  - AppStream ID: `org.rayforge.rayforge` → `org.piresforge.pires-forge`
-  - MIME types: `application/x-rayforge-*` → `application/x-piresforge-*`
-  - Debian package: `rayforge` → `pires-forge`
-  - Binary entry point: `rayforge` → `pires-forge`
-  - macOS bundle: `Rayforge.app` → `Pires Forge.app`
-  - Windows bundle: `rayforge-v*` → `pires-forge-v*`
+- **Blueforge rebrand** (PR #34 + 9 follow-up commits):
+  - Display name: `Rayforge` → `Blueforge`
+  - AppStream ID: `org.rayforge.rayforge` → `org.blueforge.blueforge`
+  - MIME types: `application/x-rayforge-*` → `application/x-blueforge-*`
+  - Debian package: `rayforge` → `blueforge`
+  - Binary entry point: `rayforge` → `blueforge`
+  - macOS bundle: `Rayforge.app` → `Blueforge.app`
+  - Windows bundle: `rayforge-v*` → `blueforge-v*`
   - NSIS installer product name updated
 
 - **Internationalization fix** (PR #32, PR #33, commit `9f376ed9`):
@@ -403,7 +442,7 @@ changelog reflects what actually shipped to users.
   - All references updated from Samuel Abels to Yuri Schmaltz
   - `pyproject.toml` authors, AppStream developer, `debian/control`
     maintainer, and `NOTICE` file
-  - All GitHub URLs point to `yuri-schmaltz/pires-forge`
+  - All GitHub URLs point to `yuri-schmaltz/blueforge`
 
 ### Changed
 
@@ -412,14 +451,14 @@ changelog reflects what actually shipped to users.
   `barebaric/rayforge` (upstream), which would have notified users
   about old `Rayforge 1.8.5` releases they shouldn't upgrade to. All
   GitHub URLs (`GITHUB_RELEASES_API`, `GITHUB_URL`, `ISSUES_URL`,
-  `DOWNLOAD_URL`) now point to `yuri-schmaltz/pires-forge`.
+  `DOWNLOAD_URL`) now point to `yuri-schmaltz/blueforge`.
 - **Update check is OFF by default.** `check_for_app_updates` in
   `rayforge/core/config.py` now defaults to `False` (was `True`).
   Users can opt-in via Settings → Preferences.
 - **Notification strings use `APP_NAME`.** Update notifications
-  read "Pires Forge X.Y.Z is available." instead of hardcoded
+  read "Blueforge X.Y.Z is available." instead of hardcoded
   "Rayforge X.Y.Z is available.".
-- **`.desktop` `Exec` field updated** to `pires-forge` (was
+- **`.desktop` `Exec` field updated** to `blueforge` (was
   `rayforge` in the first rebrand release — the wrong binary name
   caused Cinnamon to hide the .desktop from the menu).
 - **All contributor history rewritten** to a single maintainer
@@ -454,22 +493,22 @@ changelog reflects what actually shipped to users.
 Upgrading from an earlier release (e.g. the `rayforge` package or `1.9.0+resilience.9-pires*`):
 
 ```bash
-sudo apt remove pires-forge  # or rayforge, whichever is installed
-sudo apt install ./pires-forge-linux.deb
+sudo apt remove blueforge  # or rayforge, whichever is installed
+sudo apt install ./blueforge-linux.deb
 ```
 
-The Debian package is now named `pires-forge`, so apt treats it as
+The Debian package is now named `blueforge`, so apt treats it as
 a different package. The `~/.config/rayforge/` config directory is
 unchanged (kept under the `rayforge` name for compatibility with
 the Python module path).
 
 If you had a workaround `.desktop` in
-`~/.local/share/applications/pires-forge.desktop`, you can remove
+`~/.local/share/applications/blueforge.desktop`, you can remove
 it now:
 
 ```bash
-rm ~/.local/share/applications/pires-forge.desktop
+rm ~/.local/share/applications/blueforge.desktop
 update-desktop-database ~/.local/share/applications
 ```
 
-[1.0.0]: https://github.com/yuri-schmaltz/pires-forge/releases/tag/v1.0.0
+[1.0.0]: https://github.com/yuri-schmaltz/blueforge/releases/tag/v1.0.0
