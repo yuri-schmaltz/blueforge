@@ -53,7 +53,6 @@ extraPaths = [
     "rayforge/builtin_addons/rayforge-addon-laser",
     "rayforge/builtin_addons/rayforge-addon-materials",
     "rayforge/builtin_addons/rayforge-addon-post",
-    "rayforge/builtin_addons/rayforge-addon-print-and-cut",
     "rayforge/builtin_addons/rayforge-addon-sketcher",
 ]
 reportMissingModuleSource = false

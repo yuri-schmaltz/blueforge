@@ -79,7 +79,6 @@ offering a full suite of tools for both hobbyists and professionals.
 | :-------------------------- | :-------------------------------------------------------------------------------------------- |
 | **Camera Integration**      | USB camera for workpiece alignment, positioning, background tracing, and fisheye calibration. |
 | **AI Workpiece Generation** | Generate SVG workpieces from text prompts using OpenAI-compatible AI providers.               |
-| **Print & Cut Alignment**   | Align cuts to printed material using registration marks with a guided wizard.                 |
 | **Headless/CLI Mode**       | Worker-only mode without UI for batch processing and automation.                              |
 | **Projector Mode**          | Project toolpaths onto your machine bed for alignment.                                        |
 
