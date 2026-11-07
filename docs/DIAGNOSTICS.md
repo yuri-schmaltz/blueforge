@@ -72,15 +72,14 @@ the raw log file at:
 
 ## Telemetry and analytics
 
-Blueforge has **no telemetry**. The
-`rayforge.usage.UsageTracker` module exists in the source tree for
-backward compatibility with the upstream Rayforge, but the
-`UMAMI_URL` and `UMAMI_WEBSITE_ID` constants are set to empty
-strings in `rayforge/config.py`. The tracker is a no-op.
+Blueforge has **no telemetry**. The anonymous usage tracker that the
+upstream Rayforge shipped with was removed from the source tree
+along with its consent dialog and every call site. The application
+does not contact any third-party analytics endpoint.
 
-To verify, open **Settings → Preferences → Privacy** in the app:
-there is no "Send anonymous usage data" toggle because there is
-nothing to send.
+To verify, open **Settings → Preferences** in the app: there is no
+Privacy group and no "Send anonymous usage data" toggle, because
+there is nothing to send.
 
 ## Security contact
 
