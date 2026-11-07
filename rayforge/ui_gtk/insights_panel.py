@@ -34,9 +34,9 @@ state beyond the tracker's own (in-memory) counters.
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Gtk, Adw, Pango
 
 if TYPE_CHECKING:
     from ..util.local_tracker import LocalTracker
@@ -91,7 +91,7 @@ class InsightsDialog(Adw.Dialog):
 
         self._chart = InsightsChart(tracker=self._tracker)
         chart_row = self._build_chart_row(self._chart)
-        self._session_section.add_row(chart_row)
+        self._session_section.append(chart_row)
 
         self._session_labels = {}
         for label in (
@@ -100,7 +100,7 @@ class InsightsDialog(Adw.Dialog):
             "Current mode",
         ):
             row, lbl = self._build_stat_row(label)
-            self._session_section.add_row(row)
+            self._session_section.append(row)
             self._session_labels[label] = lbl
 
         # Section: top actions.
@@ -110,7 +110,7 @@ class InsightsDialog(Adw.Dialog):
         self._actions_list = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, spacing=4
         )
-        self._actions_section.add_row(
+        self._actions_section.append(
             Gtk.ListBoxRow(child=self._actions_list)
         )
 
@@ -126,7 +126,7 @@ class InsightsDialog(Adw.Dialog):
             "Toolbar mode",
         ):
             row, lbl = self._build_stat_row(label)
-            self._config_section.add_row(row)
+            self._config_section.append(row)
             self._config_labels[label] = lbl
 
         scrolled = Gtk.ScrolledWindow()
@@ -159,8 +159,8 @@ class InsightsDialog(Adw.Dialog):
         # Tracer on or off. Default off. The toggle is
         # persistent via config.tracing_enabled, so closing
         # the dialog and reopening preserves the state.
-        from ..core.config import get_context
-        from ..util.localized import _
+        from ..context import get_context
+        from ..shared.util.localized import _
 
         tracing_label = Gtk.Label(label=_("Enable tracing"))
         tracing_label.set_xalign(0.0)
@@ -186,12 +186,9 @@ class InsightsDialog(Adw.Dialog):
         """Build a labelled, separated section row.
 
         Returns the inner ListBox; rows can be appended
-        with add_row. The title is rendered as an Adw
+        with append(). The title is rendered as an Adw
         preferences group (since the rest of the app uses
         those)."""
-        from ..core.config import get_context
-
-        config = get_context().config()
         group = Adw.PreferencesGroup()
         group.set_title(title)
         listbox = Gtk.ListBox()
@@ -256,9 +253,9 @@ class InsightsDialog(Adw.Dialog):
 
         Called once on open and any time the dialog is
         re-shown. Cheap (a few dict lookups)."""
-        from ..core.config import get_context
+        from ..context import get_context
 
-        config = get_context().config()
+        config = get_context().config
 
         # Session stats
         self._session_labels["Session time"].set_text(
@@ -274,10 +271,11 @@ class InsightsDialog(Adw.Dialog):
         # Top 10 actions
         top = self._tracker.top_actions(10)
         # Clear old list
-        while self._actions_list.get_first_child() is not None:
-            self._actions_list.remove(
-                self._actions_list.get_first_child()
-            )
+        while True:
+            first = self._actions_list.get_first_child()
+            if first is None:
+                break
+            self._actions_list.remove(first)
         for name, count in top:
             row = Gtk.Box(
                 orientation=Gtk.Orientation.HORIZONTAL, spacing=12
@@ -287,7 +285,7 @@ class InsightsDialog(Adw.Dialog):
             lbl = Gtk.Label(label=name)
             lbl.set_xalign(0.0)
             lbl.set_hexpand(True)
-            lbl.set_ellipsize(3)  # PANGO_ELLIPSIZE_END
+            lbl.set_ellipsize(Pango.EllipsizeMode.END)
             count_lbl = Gtk.Label(label=str(count))
             count_lbl.set_xalign(1.0)
             count_lbl.add_css_class("dim-label")
@@ -324,4 +322,4 @@ class InsightsDialog(Adw.Dialog):
         # Re-read on each open so the dialog always shows
         # the freshest stats.
         self._refresh()
-        super().do_opened()
+        super().do_opened()  # type: ignore

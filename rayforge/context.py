@@ -146,7 +146,7 @@ class RayforgeContext:
             from .core.registration import (
                 call_registration_hooks,
                 get_registries,
-        )
+            )
         from .doceditor.layout.registry import (
             register_builtin_layout_strategies,
         )

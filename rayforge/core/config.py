@@ -123,7 +123,7 @@ class Config:
         self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
-        # Pires Forge does not check for updates by default. The fork
+        # Blueforge does not check for updates by default. The fork
         # has its own release cadence and we don't want to silently
         # notify users about unrelated upstream versions. Users can
         # opt-in via Settings → Preferences.

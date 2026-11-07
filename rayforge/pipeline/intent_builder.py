@@ -1081,7 +1081,7 @@ def _hash_int(payload: Mapping[str, Any]) -> int:
     bandit / ruff.
     """
     blob = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
-    # ``usedforsecurity=False`` was added in Python 3.9; ``pires-forge``
+    # ``usedforsecurity=False`` was added in Python 3.9; ``blueforge``
     # requires Python >= 3.11, so the kwarg is always available.
     digest = hashlib.sha256(blob, usedforsecurity=False).digest()
     # Take the first 8 bytes, mask the sign bit.

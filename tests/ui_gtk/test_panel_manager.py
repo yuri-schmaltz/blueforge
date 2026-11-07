@@ -81,4 +81,3 @@ def test_panel_manager_individual_controls():
 
     mgr.set_cad_ribbon_visible(True)
     ribbon.set_visible.assert_called_with(True)
-

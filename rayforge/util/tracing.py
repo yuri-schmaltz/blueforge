@@ -174,7 +174,9 @@ class Tracer:
             )
         return "\n".join(lines)
 
-    def export_chrome(self, path: str, process_name: str = "pires-forge") -> None:
+    def export_chrome(
+        self, path: str, process_name: str = "blueforge"
+    ) -> None:
         """Export events in Chrome Trace Event Format.
 
         The output JSON can be opened in `chrome://tracing`

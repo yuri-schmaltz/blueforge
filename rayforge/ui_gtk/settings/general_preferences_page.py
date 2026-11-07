@@ -403,10 +403,8 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         # effort — if we can't find the MainWindow (e.g. running
         # headless or in a test harness) we silently skip it.
         try:
-            main_window = combo_row.get_root()
             # Walk the ancestor chain looking for the MainWindow.
-            from .mainwindow import MainWindow
-            from gi.repository import Gtk
+            from ..mainwindow import MainWindow
 
             widget = combo_row
             while widget is not None and not isinstance(
@@ -415,7 +413,9 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
                 widget = widget.get_parent()
             if widget is not None:
                 label = self.THEME_LABELS[selected_index]
-                toast = Adw.Toast.new(_("Theme set to {label}").format(label=label))
+                toast = Adw.Toast.new(
+                    _("Theme set to {label}").format(label=label)
+                )
                 toast.set_timeout(2)
                 widget._add_toast(toast)
         except Exception:
@@ -439,7 +439,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         # Visual confirmation: same pattern as on_theme_changed.
         try:
-            from .mainwindow import MainWindow
+            from ..mainwindow import MainWindow
 
             widget = combo_row
             while widget is not None and not isinstance(

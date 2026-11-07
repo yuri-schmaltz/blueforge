@@ -37,7 +37,6 @@ from __future__ import annotations
 import logging
 import time
 from collections import deque
-from typing import Optional
 
 from gi.repository import Gtk, GLib
 

@@ -1,11 +1,11 @@
 """
-Parametric CAD & Design Studio components for Pires Forge.
+Parametric CAD & Design Studio components for Blueforge.
 
 This module provides the CAD-first UI architecture:
-- CadToolPalette: Left-hand vector CAD tool palette (Select, Nodes, Shapes, Curves, Offset, Measure).
-- CadRibbon: Contextual top ribbon for alignment, distribution, boolean ops, and parametric constraints.
-- CadInspectorTab: Dedicated inspector tab for geometric constraints, laser kerf offset, tabs, and lead-in/out.
-- OperationsTimelineWidget: Dockable timeline view showing passes and operations in cutting sequence.
+- CadToolPalette: Vector CAD tool entry points.
+- CadRibbon: Alignment, distribution and geometry controls.
+- CadInspectorTab: Geometry and contour settings.
+- OperationsTimelineWidget: Workflow order and operation parameters.
 """
 
 from .cad_palette import CadToolPalette

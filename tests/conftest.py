@@ -1,4 +1,5 @@
 # flake8: noqa: E402
+import importlib
 import multiprocessing
 import os
 import sys
@@ -6,7 +7,8 @@ import tempfile
 from pathlib import Path
 
 # MUST be set before any rayforge imports to isolate config directories
-_TEST_CONFIG_DIR = Path(tempfile.gettempdir()) / "rayforge_test_config"
+_TEST_CONFIG_ROOT = tempfile.TemporaryDirectory(prefix="blueforge-test-config-")
+_TEST_CONFIG_DIR = Path(_TEST_CONFIG_ROOT.name)
 os.environ["RAYFORGE_CONFIG_DIR"] = str(_TEST_CONFIG_DIR)
 
 try:
@@ -43,7 +45,7 @@ if not _HAS_GI:
     repo_mock.Rsvg.Handle.new_from_gfile_sync.return_value.get_dimensions.return_value = _dim
 
 try:
-    import pyvips
+    importlib.import_module("pyvips")
 except (ImportError, OSError):
     _vips_mock = MagicMock()
     class _MockVipsError(Exception):

@@ -35,7 +35,6 @@ surface's own interactions.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import gi
 
@@ -100,7 +99,9 @@ class DragHandle(Gtk.Box):
         self.add_css_class("drag-handle")
         # The grab cursor
         self.set_cursor(
-            Gtk.Cursor.new_from_name("grab", None)
+            Gtk.Cursor.new_from_name(  # type: ignore[attr-defined]
+                "grab", None
+            )
         )
 
         # The icon label
@@ -151,14 +152,16 @@ class DragHandle(Gtk.Box):
         self, gesture: Gtk.GestureDrag, x: float, y: float
     ) -> None:
         # Translate to root coordinates
-        ok, rx, ry = self.translate_coordinates(
-            Gtk.Widget.get_root(self), x, y
+        ok, rx, ry = self.translate_coordinates(  # type: ignore
+            Gtk.Widget.get_root(self), x, y  # type: ignore
         )
         if not ok:
             rx, ry = x, y
         # Switch the cursor to 'grabbing'
         self.set_cursor(
-            Gtk.Cursor.new_from_name("grabbing", None)
+            Gtk.Cursor.new_from_name(  # type: ignore[attr-defined]
+                "grabbing", None
+            )
         )
         self.emit("drag-begin", rx, ry)
 
@@ -173,8 +176,8 @@ class DragHandle(Gtk.Box):
         # is (start_root + offset).
         # Simpler: we re-translate from the widget
         # origin every time.
-        ok, rx, ry = self.translate_coordinates(
-            Gtk.Widget.get_root(self), 0, 0
+        ok, rx, ry = self.translate_coordinates(  # type: ignore
+            Gtk.Widget.get_root(self), 0, 0  # type: ignore
         )
         if ok:
             rx += x
@@ -186,8 +189,8 @@ class DragHandle(Gtk.Box):
     def _on_gesture_end(
         self, gesture: Gtk.GestureDrag, x: float, y: float
     ) -> None:
-        ok, rx, ry = self.translate_coordinates(
-            Gtk.Widget.get_root(self), 0, 0
+        ok, rx, ry = self.translate_coordinates(  # type: ignore
+            Gtk.Widget.get_root(self), 0, 0  # type: ignore
         )
         if ok:
             rx += x
@@ -195,6 +198,8 @@ class DragHandle(Gtk.Box):
         else:
             rx, ry = x, y
         self.set_cursor(
-            Gtk.Cursor.new_from_name("grab", None)
+            Gtk.Cursor.new_from_name(  # type: ignore[attr-defined]
+                "grab", None
+            )
         )
         self.emit("drag-end", rx, ry)

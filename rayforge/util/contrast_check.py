@@ -1,4 +1,4 @@
-"""WCAG 2.1 contrast checker for pires-forge's color palette.
+"""WCAG 2.1 contrast checker for blueforge's color palette.
 
 The color palette used by the status bar mode badge
 (Designing/Framing/Sending/Paused/Alarm/Idle) and other

@@ -55,9 +55,8 @@ from __future__ import annotations
 
 import json
 import random
-import time
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, Tuple
 
 # Number of random iterations per property. 100 is
 # enough to catch obvious off-by-one bugs; for serious
@@ -68,7 +67,7 @@ ITERATIONS = 100
 def _check_property(
     name: str,
     iterations: int,
-    fn: Callable[[int], None],
+    fn: Callable[[random.Random], None],
 ) -> Tuple[bool, str]:
     """Run `fn` `iterations` times with a random seed.
 

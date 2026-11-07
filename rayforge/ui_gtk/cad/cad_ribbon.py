@@ -2,13 +2,12 @@
 Contextual CAD Alignment & Properties Ribbon.
 
 Placed directly below the coordinate bar, providing 1-click access to
-alignment, distribution, flipping, grouping, and geometric aspect-ratio constraints.
+alignment, distribution, flipping, grouping, and aspect-ratio constraints.
 """
 
 from __future__ import annotations
 
 import logging
-import math
 from typing import TYPE_CHECKING, List, Optional
 
 from gi.repository import Gtk
@@ -49,11 +48,16 @@ class CadRibbon(Gtk.Box):
             self,
             _("CAD Contextual Ribbon"),
             role=Gtk.AccessibleRole.TOOLBAR,
-            description=_("Quick alignment, distribution, and geometry constraints"),
+            description=_(
+                "Quick alignment, distribution, and geometry constraints"
+            ),
         )
 
         self._build_ribbon()
         self._update_action_sensitivity(0)
+        self.main_window.doc_editor.document_changed.connect(
+            self._on_document_changed
+        )
 
     def _build_ribbon(self) -> None:
         # ---- 1. Alignment Tools ----
@@ -158,7 +162,9 @@ class CadRibbon(Gtk.Box):
 
         # ---- 5. Aspect Ratio Lock & Quick Transform Inputs ----
         self._aspect_btn = Gtk.ToggleButton()
-        self._aspect_btn.set_child(get_icon("sketch-constrain-aspect-symbolic"))
+        self._aspect_btn.set_child(
+            get_icon("sketch-constrain-aspect-symbolic")
+        )
         self._aspect_btn.set_active(True)
         self._aspect_btn.add_css_class("flat")
         self._aspect_btn.set_tooltip_text(_("Lock / Unlock Aspect Ratio"))
@@ -243,12 +249,22 @@ class CadRibbon(Gtk.Box):
 
     def on_selection_changed(self, selected_items: List["DocItem"]) -> None:
         """Called by MainWindow when selection changes on the canvas."""
+        for item in self._selected_items:
+            item.transform_changed.disconnect(self._on_transform_changed)
         self._selected_items = list(selected_items)
+        for item in self._selected_items:
+            item.transform_changed.connect(self._on_transform_changed)
         count = len(self._selected_items)
         self._update_action_sensitivity(count)
 
         if count > 0:
             self._update_dimension_inputs()
+
+    def _on_document_changed(self, sender, **kwargs) -> None:
+        self.on_selection_changed([])
+
+    def _on_transform_changed(self, sender, **kwargs) -> None:
+        self._update_dimension_inputs()
 
     def _update_action_sensitivity(self, count: int) -> None:
         """Enable or disable ribbon controls based on item count."""
@@ -291,6 +307,10 @@ class CadRibbon(Gtk.Box):
             try:
                 self._width_spin.set_value(w)
                 self._height_spin.set_value(h)
+                self._angle_spin.set_value(
+                    editor.transform.get_angle_group(self._selected_items)
+                    or 0.0
+                )
             finally:
                 self._updating_inputs = False
         except Exception as e:
@@ -314,54 +334,19 @@ class CadRibbon(Gtk.Box):
         new_h: Optional[float] = None,
     ) -> None:
         """Resize the selected items via editor transform command."""
-        try:
-            editor = self.main_window.doc_editor
-            bbox = editor.transform.group_bbox_world(self._selected_items)
-            old_w = max(0.001, bbox[2] - bbox[0])
-            old_h = max(0.001, bbox[3] - bbox[1])
-
-            if new_w is not None and new_h is None:
-                scale_x = new_w / old_w
-                scale_y = scale_x if self._aspect_locked else 1.0
-                if self._aspect_locked:
-                    self._updating_inputs = True
-                    try:
-                        self._height_spin.set_value(old_h * scale_y)
-                    finally:
-                        self._updating_inputs = False
-            elif new_h is not None and new_w is None:
-                scale_y = new_h / old_h
-                scale_x = scale_y if self._aspect_locked else 1.0
-                if self._aspect_locked:
-                    self._updating_inputs = True
-                    try:
-                        self._width_spin.set_value(old_w * scale_x)
-                    finally:
-                        self._updating_inputs = False
-            else:
-                return
-
-            center = editor.transform.group_center_world(self._selected_items)
-            editor.transform.scale_items(
-                self._selected_items,
-                scale_x=scale_x,
-                scale_y=scale_y,
-                center=center,
-            )
-        except Exception as e:
-            logger.debug(f"Scale change through ribbon: {e}")
+        editor = self.main_window.doc_editor
+        editor.transform.set_size_group(
+            self._selected_items,
+            width=new_w,
+            height=new_h,
+            fixed_ratio=self._aspect_locked,
+        )
+        self._update_dimension_inputs()
 
     def _on_angle_changed(self, spin: Gtk.SpinButton) -> None:
         if self._updating_inputs or not self._selected_items:
             return
-        angle_deg = spin.get_value()
-        try:
-            editor = self.main_window.doc_editor
-            center = editor.transform.group_center_world(self._selected_items)
-            editor.transform.rotate_items(
-                self._selected_items,
-                angle_rad=math.radians(angle_deg),
-                center=center,
-            )
-        except Exception as e:
-            logger.debug(f"Rotate change through ribbon: {e}")
+        self.main_window.doc_editor.transform.set_angle_group(
+            self._selected_items, spin.get_value()
+        )
+        self._update_dimension_inputs()

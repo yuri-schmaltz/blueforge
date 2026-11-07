@@ -107,7 +107,11 @@ class DockLayout:
             # Swap: surface and displaced exchange zones
             setattr(self, zone.value, surface)
             if current_zone is not None:
-                setattr(self.current_zone_value(current_zone), displaced)
+                setattr(
+                    self,
+                    self.current_zone_value(current_zone),
+                    displaced,
+                )
 
     def _zone_of(self, surface: str) -> Optional[Zone]:
         """Return the zone containing `surface`, or None."""

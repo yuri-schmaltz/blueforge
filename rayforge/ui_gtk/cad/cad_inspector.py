@@ -8,12 +8,12 @@ holding tabs placement, and lead-in/lead-out parameters.
 from __future__ import annotations
 
 import logging
-import math
 from typing import TYPE_CHECKING, List
 
 from gi.repository import Adw, Gtk
 
 from ...core.item import DocItem
+from ...core.undo import ChangePropertyCommand
 from ...shared.util.a11y import set_a11y_label
 from ...shared.util.localized import _
 
@@ -52,6 +52,34 @@ class CadInspectorTab(Gtk.Box):
         )
 
         self._build_ui()
+        self.set_sensitive(False)
+        self._document = None
+        self._bind_document()
+        self.editor.document_changed.connect(self._on_document_changed)
+
+    def _bind_document(self) -> None:
+        if self._document is not None:
+            for signal in self._step_signals(self._document):
+                signal.disconnect(self._on_step_changed)
+        self._document = self.editor.doc
+        for signal in self._step_signals(self._document):
+            signal.connect(self._on_step_changed)
+
+    @staticmethod
+    def _step_signals(doc):
+        return (
+            doc.active_layer_changed,
+            doc.descendant_updated,
+            doc.descendant_added,
+            doc.descendant_removed,
+        )
+
+    def _on_document_changed(self, sender, **kwargs) -> None:
+        self.on_selection_changed([])
+        self._bind_document()
+
+    def _on_step_changed(self, sender, **kwargs) -> None:
+        self._update_step_fields()
 
     def _build_ui(self) -> None:
         # ============================================================
@@ -65,21 +93,27 @@ class CadInspectorTab(Gtk.Box):
 
         # X, Y Position
         x_adj = Gtk.Adjustment(
-            lower=-10000.0, upper=10000.0, step_increment=1.0, page_increment=10.0
+            lower=-10000.0,
+            upper=10000.0,
+            step_increment=1.0,
+            page_increment=10.0,
         )
         self.pos_x_row = Adw.SpinRow(
             title=_("X Position (mm)"), adjustment=x_adj, digits=2
         )
-        self.pos_x_row.connect("changed", self._on_pos_x_changed)
+        self.pos_x_row.connect("notify::value", self._on_pos_x_changed)
         geom_group.add(self.pos_x_row)
 
         y_adj = Gtk.Adjustment(
-            lower=-10000.0, upper=10000.0, step_increment=1.0, page_increment=10.0
+            lower=-10000.0,
+            upper=10000.0,
+            step_increment=1.0,
+            page_increment=10.0,
         )
         self.pos_y_row = Adw.SpinRow(
             title=_("Y Position (mm)"), adjustment=y_adj, digits=2
         )
-        self.pos_y_row.connect("changed", self._on_pos_y_changed)
+        self.pos_y_row.connect("notify::value", self._on_pos_y_changed)
         geom_group.add(self.pos_y_row)
 
         # Width, Height
@@ -89,7 +123,7 @@ class CadInspectorTab(Gtk.Box):
         self.width_row = Adw.SpinRow(
             title=_("Width (mm)"), adjustment=w_adj, digits=2
         )
-        self.width_row.connect("changed", self._on_width_changed)
+        self.width_row.connect("notify::value", self._on_width_changed)
         geom_group.add(self.width_row)
 
         h_adj = Gtk.Adjustment(
@@ -98,7 +132,7 @@ class CadInspectorTab(Gtk.Box):
         self.height_row = Adw.SpinRow(
             title=_("Height (mm)"), adjustment=h_adj, digits=2
         )
-        self.height_row.connect("changed", self._on_height_changed)
+        self.height_row.connect("notify::value", self._on_height_changed)
         geom_group.add(self.height_row)
 
         # Rotation Angle
@@ -108,7 +142,7 @@ class CadInspectorTab(Gtk.Box):
         self.rot_row = Adw.SpinRow(
             title=_("Rotation (deg)"), adjustment=rot_adj, digits=1
         )
-        self.rot_row.connect("changed", self._on_rotation_changed)
+        self.rot_row.connect("notify::value", self._on_rotation_changed)
         geom_group.add(self.rot_row)
 
         # Fillet / Corner Radius
@@ -121,6 +155,10 @@ class CadInspectorTab(Gtk.Box):
             adjustment=fillet_adj,
             digits=2,
         )
+        self.fillet_row.set_sensitive(False)
+        self.fillet_row.set_subtitle(
+            _("Edit corner geometry in the sketch editor")
+        )
         geom_group.add(self.fillet_row)
 
         self.append(geom_group)
@@ -129,9 +167,12 @@ class CadInspectorTab(Gtk.Box):
         # 2. Laser Kerf & Cut Offset
         # ============================================================
         kerf_group = Adw.PreferencesGroup()
-        kerf_group.set_title(_("Laser Kerf & Offset Compensation"))
+        self._kerf_group = kerf_group
+        kerf_group.set_title(_("Laser Kerf and Offset Compensation"))
         kerf_group.set_description(
-            _("Compensate for beam spot width so parts fit with exact clearance")
+            _(
+                "Settings for the first contour operation in the active layer"
+            )
         )
 
         # Quick Kerf Presets
@@ -166,12 +207,14 @@ class CadInspectorTab(Gtk.Box):
         )
         self.kerf_spin = Adw.SpinRow(
             title=_("Kerf Diameter (mm)"),
-            subtitle=_("Effective width of material vaporized by the laser beam"),
+            subtitle=_(
+                "Effective width of material vaporized by the laser beam"
+            ),
             adjustment=kerf_adj,
             digits=3,
         )
         kerf_adj.set_value(0.15)
-        self.kerf_spin.connect("changed", self._on_kerf_changed)
+        self.kerf_spin.connect("notify::value", self._on_kerf_changed)
         kerf_group.add(self.kerf_spin)
 
         # Cut Side
@@ -185,7 +228,9 @@ class CadInspectorTab(Gtk.Box):
             model=Gtk.StringList.new(cut_side_choices),
         )
         self.cut_side_row.set_selected(0)
-        self.cut_side_row.connect("notify::selected", self._on_cut_side_changed)
+        self.cut_side_row.connect(
+            "notify::selected", self._on_cut_side_changed
+        )
         kerf_group.add(self.cut_side_row)
 
         # Overcut (clean dropout)
@@ -194,11 +239,13 @@ class CadInspectorTab(Gtk.Box):
         )
         self.overcut_row = Adw.SpinRow(
             title=_("Overcut (mm)"),
-            subtitle=_("Extend contour cut past end to ensure clean part fallout"),
+            subtitle=_(
+                "Extend contour cut past end to ensure clean part fallout"
+            ),
             adjustment=overcut_adj,
             digits=2,
         )
-        self.overcut_row.connect("changed", self._on_overcut_changed)
+        self.overcut_row.connect("notify::value", self._on_overcut_changed)
         kerf_group.add(self.overcut_row)
 
         self.append(kerf_group)
@@ -221,6 +268,10 @@ class CadInspectorTab(Gtk.Box):
             digits=2,
         )
         tab_width_adj.set_value(1.5)
+        self.tab_width_row.set_sensitive(False)
+        self.tab_width_row.set_subtitle(
+            _("Configure tab dimensions in item properties")
+        )
         tabs_group.add(self.tab_width_row)
 
         tab_actions_row = Adw.ActionRow(
@@ -244,7 +295,11 @@ class CadInspectorTab(Gtk.Box):
             _("Start piercing off-contour to eliminate burn pierce marks")
         )
 
-        lead_type_choices = [_("None (Direct)"), _("Linear"), _("Arc (Smooth)")]
+        lead_type_choices = [
+            _("None (Direct)"),
+            _("Linear"),
+            _("Arc (Smooth)"),
+        ]
         self.lead_type_row = Adw.ComboRow(
             title=_("Lead-In Type"),
             model=Gtk.StringList.new(lead_type_choices),
@@ -263,21 +318,50 @@ class CadInspectorTab(Gtk.Box):
         lead_len_adj.set_value(2.0)
         lead_group.add(self.lead_len_row)
 
+        lead_group.set_sensitive(False)
+        lead_group.set_description(
+            _("Not yet connected to the toolpath pipeline")
+        )
         self.append(lead_group)
 
     def _set_kerf_value(self, value: float) -> None:
         self.kerf_spin.set_value(value)
-        self._apply_kerf_to_active_step(value)
 
     def on_selection_changed(self, selected_items: List[DocItem]) -> None:
         """Called when selection changes on the canvas."""
+        for item in self._selected_items:
+            item.transform_changed.disconnect(self._on_transform_changed)
         self._selected_items = list(selected_items)
+        for item in self._selected_items:
+            item.transform_changed.connect(self._on_transform_changed)
         if not self._selected_items:
             self.set_sensitive(False)
             return
 
         self.set_sensitive(True)
         self._update_geometry_fields()
+        self._update_step_fields()
+
+    def _on_transform_changed(self, sender, **kwargs) -> None:
+        self._update_geometry_fields()
+
+    def _update_step_fields(self) -> None:
+        step = self._get_active_contour_step()
+        self._kerf_group.set_sensitive(step is not None)
+        for widget in (self.kerf_spin, self.cut_side_row, self.overcut_row):
+            widget.set_sensitive(step is not None)
+        if step is None:
+            return
+        self._updating = True
+        try:
+            self.kerf_spin.set_value(step.kerf_mm)
+            sides = {"OUTSIDE": 0, "INSIDE": 1, "CENTERLINE": 2}
+            self.cut_side_row.set_selected(
+                sides.get(getattr(step, "cut_side", "CENTERLINE"), 2)
+            )
+            self.overcut_row.set_value(getattr(step, "overcut", 0.0))
+        finally:
+            self._updating = False
 
     def _update_geometry_fields(self) -> None:
         if not self._selected_items or self._updating:
@@ -291,8 +375,18 @@ class CadInspectorTab(Gtk.Box):
 
             self._updating = True
             try:
-                self.pos_x_row.set_value(min_x)
-                self.pos_y_row.set_value(min_y)
+                position = self.editor.transform.get_position_group(
+                    self._selected_items
+                )
+                if position is None:
+                    return
+                x, y = position
+                self.pos_x_row.set_value(x)
+                self.pos_y_row.set_value(y)
+                self.rot_row.set_value(
+                    self.editor.transform.get_angle_group(self._selected_items)
+                    or 0.0
+                )
                 self.width_row.set_value(w)
                 self.height_row.set_value(h)
             finally:
@@ -300,136 +394,115 @@ class CadInspectorTab(Gtk.Box):
         except Exception as e:
             logger.debug(f"Failed to update CAD inspector fields: {e}")
 
-    def _on_pos_x_changed(self, row: Adw.SpinRow) -> None:
+    def _on_pos_x_changed(self, row: Adw.SpinRow, pspec=None) -> None:
         if self._updating or not self._selected_items:
             return
-        new_x = row.get_value()
-        try:
-            bbox = self.editor.transform.group_bbox_world(self._selected_items)
-            dx = new_x - bbox[0]
-            if abs(dx) > 0.001:
-                self.editor.transform.translate_items(
-                    self._selected_items, delta_x=dx, delta_y=0.0
-                )
-        except Exception as e:
-            logger.debug(f"Position X update: {e}")
+        position = self.editor.transform.get_position_group(
+            self._selected_items
+        )
+        if position is None:
+            return
+        _, y = position
+        self.editor.transform.set_position_group(
+            self._selected_items, row.get_value(), y
+        )
+        self._update_geometry_fields()
 
-    def _on_pos_y_changed(self, row: Adw.SpinRow) -> None:
+    def _on_pos_y_changed(self, row: Adw.SpinRow, pspec=None) -> None:
         if self._updating or not self._selected_items:
             return
-        new_y = row.get_value()
-        try:
-            bbox = self.editor.transform.group_bbox_world(self._selected_items)
-            dy = new_y - bbox[1]
-            if abs(dy) > 0.001:
-                self.editor.transform.translate_items(
-                    self._selected_items, delta_x=0.0, delta_y=dy
-                )
-        except Exception as e:
-            logger.debug(f"Position Y update: {e}")
+        position = self.editor.transform.get_position_group(
+            self._selected_items
+        )
+        if position is None:
+            return
+        x, _ = position
+        self.editor.transform.set_position_group(
+            self._selected_items, x, row.get_value()
+        )
+        self._update_geometry_fields()
 
-    def _on_width_changed(self, row: Adw.SpinRow) -> None:
+    def _on_width_changed(self, row: Adw.SpinRow, pspec=None) -> None:
         if self._updating or not self._selected_items:
             return
-        new_w = row.get_value()
-        try:
-            bbox = self.editor.transform.group_bbox_world(self._selected_items)
-            old_w = max(0.001, bbox[2] - bbox[0])
-            scale_x = new_w / old_w
-            scale_y = scale_x if self._aspect_locked else 1.0
+        self.editor.transform.set_size_group(
+            self._selected_items,
+            width=row.get_value(),
+            fixed_ratio=self._aspect_locked,
+        )
+        self._update_geometry_fields()
 
-            if self._aspect_locked:
-                old_h = max(0.001, bbox[3] - bbox[1])
-                self._updating = True
-                try:
-                    self.height_row.set_value(old_h * scale_y)
-                finally:
-                    self._updating = False
-
-            center = self.editor.transform.group_center_world(self._selected_items)
-            self.editor.transform.scale_items(
-                self._selected_items, scale_x=scale_x, scale_y=scale_y, center=center
-            )
-        except Exception as e:
-            logger.debug(f"Width update: {e}")
-
-    def _on_height_changed(self, row: Adw.SpinRow) -> None:
+    def _on_height_changed(self, row: Adw.SpinRow, pspec=None) -> None:
         if self._updating or not self._selected_items:
             return
-        new_h = row.get_value()
-        try:
-            bbox = self.editor.transform.group_bbox_world(self._selected_items)
-            old_h = max(0.001, bbox[3] - bbox[1])
-            scale_y = new_h / old_h
-            scale_x = scale_y if self._aspect_locked else 1.0
+        self.editor.transform.set_size_group(
+            self._selected_items,
+            height=row.get_value(),
+            fixed_ratio=self._aspect_locked,
+        )
+        self._update_geometry_fields()
 
-            if self._aspect_locked:
-                old_w = max(0.001, bbox[2] - bbox[0])
-                self._updating = True
-                try:
-                    self.width_row.set_value(old_w * scale_x)
-                finally:
-                    self._updating = False
-
-            center = self.editor.transform.group_center_world(self._selected_items)
-            self.editor.transform.scale_items(
-                self._selected_items, scale_x=scale_x, scale_y=scale_y, center=center
-            )
-        except Exception as e:
-            logger.debug(f"Height update: {e}")
-
-    def _on_rotation_changed(self, row: Adw.SpinRow) -> None:
+    def _on_rotation_changed(self, row: Adw.SpinRow, pspec=None) -> None:
         if self._updating or not self._selected_items:
             return
-        angle_deg = row.get_value()
-        try:
-            center = self.editor.transform.group_center_world(self._selected_items)
-            self.editor.transform.rotate_items(
-                self._selected_items,
-                angle_rad=math.radians(angle_deg),
-                center=center,
-            )
-        except Exception as e:
-            logger.debug(f"Rotation update: {e}")
+        self.editor.transform.set_angle_group(
+            self._selected_items, row.get_value()
+        )
+        self._update_geometry_fields()
 
-    def _on_kerf_changed(self, row: Adw.SpinRow) -> None:
+    def _on_kerf_changed(self, row: Adw.SpinRow, pspec=None) -> None:
         self._apply_kerf_to_active_step(row.get_value())
 
     def _on_cut_side_changed(self, row: Adw.ComboRow, pspec) -> None:
-        idx = row.get_selected()
-        mapping = {0: "OUTSIDE", 1: "INSIDE", 2: "ON_PATH"}
-        side_name = mapping.get(idx, "OUTSIDE")
-        active_step = self._get_active_contour_step()
-        if active_step and hasattr(active_step, "cut_side"):
-            active_step.cut_side = side_name
-            self.editor.pipeline.request_recomputation()
+        mapping = {0: "OUTSIDE", 1: "INSIDE", 2: "CENTERLINE"}
+        self._set_contour_property(
+            "cut_side", mapping[row.get_selected()], _("Change cut side")
+        )
 
-    def _on_overcut_changed(self, row: Adw.SpinRow) -> None:
-        val = row.get_value()
-        active_step = self._get_active_contour_step()
-        if active_step and hasattr(active_step, "overcut"):
-            active_step.overcut = val
-            self.editor.pipeline.request_recomputation()
+    def _on_overcut_changed(self, row: Adw.SpinRow, pspec=None) -> None:
+        self._set_contour_property(
+            "overcut", row.get_value(), _("Change overcut")
+        )
+
+    def _set_contour_property(self, key, value, name) -> None:
+        if self._updating:
+            return
+        step = self._get_active_contour_step()
+        if step is None or getattr(step, key) == value:
+            return
+
+        def notify_step() -> None:
+            step.updated.send(step)
+
+        setter = f"set_{key}"
+        self.editor.history_manager.execute(
+            ChangePropertyCommand(
+                target=step,
+                property_name=key,
+                new_value=value,
+                setter_method_name=setter if hasattr(step, setter) else None,
+                on_change_callback=(
+                    None if hasattr(step, setter) else notify_step
+                ),
+                name=name,
+            )
+        )
 
     def _get_active_contour_step(self):
         """Find contour step in current active layer."""
-        try:
-            layer = self.editor.doc.active_layer
-            if not layer or not layer.workflow:
-                return None
-            for step in layer.workflow.steps:
-                if "contour" in step.__class__.__name__.lower():
-                    return step
-        except Exception:
-            pass
-        return None
+        layer = self.editor.doc.active_layer
+        if layer is None or layer.workflow is None:
+            return None
+        return next(
+            (
+                step
+                for step in layer.workflow.steps
+                if step.ASSEMBLER_NAME == "contour"
+            ),
+            None,
+        )
 
     def _apply_kerf_to_active_step(self, kerf_val: float) -> None:
-        step = self._get_active_contour_step()
-        if step:
-            if hasattr(step, "kerf_mm"):
-                step.kerf_mm = kerf_val
-            elif hasattr(step, "path_offset_mm"):
-                step.path_offset_mm = kerf_val / 2.0
-            self.editor.pipeline.request_recomputation()
-            logger.debug(f"Applied kerf {kerf_val}mm to {step}")
+        self._set_contour_property(
+            "kerf_mm", kerf_val, _("Change kerf diameter")
+        )

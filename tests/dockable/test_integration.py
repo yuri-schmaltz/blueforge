@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import ast
 import importlib.util
-import inspect
 import os
 import sys
 import tempfile
@@ -34,18 +33,21 @@ if _REPO_ROOT not in sys.path:
 
 # Same fake-package setup as tests/dockable/__init__.py
 _fake_pkg = types.ModuleType("rayforge")
-_fake_pkg.__path__ = []
+_fake_pkg.__path__ = [os.path.join(_REPO_ROOT, "rayforge")]
 sys.modules.setdefault("rayforge", _fake_pkg)
 _fake_gtk = types.ModuleType("rayforge.ui_gtk")
-_fake_gtk.__path__ = []
+_fake_gtk.__path__ = [os.path.join(_REPO_ROOT, "rayforge", "ui_gtk")]
 sys.modules.setdefault("rayforge.ui_gtk", _fake_gtk)
 
 
 def _load(name: str, path: str):
     spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None, f"no import spec for {name}"
+    loader = spec.loader
+    assert loader is not None, f"no loader for {name}"
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
-    spec.loader.exec_module(mod)
+    loader.exec_module(mod)
     return mod
 
 
@@ -83,14 +85,14 @@ class TestIntegrationAPI(unittest.TestCase):
             self.src = f.read()
         self.tree = ast.parse(self.src)
 
-    def _find_function(self, name: str):
+    def _find_function(self, name: str) -> ast.FunctionDef:
         for node in ast.walk(self.tree):
             if (
                 isinstance(node, ast.FunctionDef)
                 and node.name == name
             ):
                 return node
-        return None
+        raise AssertionError(f"{name}() must be defined")
 
     def test_setup_dockable_exists(self) -> None:
         node = self._find_function("setup_dockable")
@@ -319,6 +321,7 @@ class TestRearrangeStrategy(unittest.TestCase):
         self.assertIsNotNone(
             found, "DOCKABLE_SURFACES not found"
         )
+        assert found is not None
         # Must include the 4 canonical surfaces
         self.assertIn("right_pane", found)
         self.assertIn("bottom_panel", found)
@@ -352,6 +355,7 @@ class TestApplyWorkspaceTriggersRearrange(unittest.TestCase):
                 apply_node = node
                 break
         self.assertIsNotNone(apply_node)
+        assert apply_node is not None
         body_src = ast.unparse(apply_node)
         self.assertIn(
             "_rearrange_from_layout", body_src,
@@ -380,6 +384,7 @@ class TestApplyWorkspaceTriggersRearrange(unittest.TestCase):
                 rearrange_node = node
                 break
         self.assertIsNotNone(rearrange_node)
+        assert rearrange_node is not None
         body_src = ast.unparse(rearrange_node)
         # Delegates to reparenting + visibility
         self.assertIn("_reparent_coordinate_bar", body_src)
@@ -434,11 +439,13 @@ class TestWorkspaceAccelerators(unittest.TestCase):
                         target_id = t.id
                         break
             if target_id == "DEFAULT_ACCELERATORS":
+                assert isinstance(node, (ast.AnnAssign, ast.Assign))
                 found = node.value
                 break
         self.assertIsNotNone(
             found, "DEFAULT_ACCELERATORS not defined"
         )
+        assert isinstance(found, ast.Dict)
         # Verify the three actions are present
         keys = set()
         for k in found.keys:
@@ -470,6 +477,7 @@ class TestWorkspaceAccelerators(unittest.TestCase):
                         init_src = ast.unparse(item)
                         break
         self.assertIsNotNone(init_src)
+        assert init_src is not None
         # Must bind all three actions
         self.assertIn("workspace.reset", init_src)
         self.assertIn("workspace.save", init_src)
@@ -508,6 +516,7 @@ class TestWorkspaceAccelerators(unittest.TestCase):
             func_node,
             "apply_workspace_accelerators not defined",
         )
+        assert func_node is not None
         # Has 2 parameters (app, accelerators)
         self.assertEqual(len(func_node.args.args), 2)
         # Body calls set_accels_for_action
@@ -613,6 +622,7 @@ class TestReparentingFunctions(unittest.TestCase):
                 rearrange_node = node
                 break
         self.assertIsNotNone(rearrange_node)
+        assert rearrange_node is not None
         body = ast.unparse(rearrange_node)
         self.assertIn("_reparent_coordinate_bar", body)
         self.assertIn("_reparent_bottom_panel", body)

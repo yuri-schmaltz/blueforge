@@ -15,8 +15,6 @@ is part of the public contract).
 """
 import importlib
 import sys
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -28,7 +26,7 @@ import pytest
 # If the import explodes, we just skip — the user should run
 # these tests on a workstation with GTK available.
 try:
-    from rayforge.ui_gtk.splash import _resolve_splash_svg
+    importlib.import_module("rayforge.ui_gtk.splash")
 except Exception as exc:  # pragma: no cover - environment-dependent
     pytest.skip(
         f"splash module not importable in this environment: {exc}",

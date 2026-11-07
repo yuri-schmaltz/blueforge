@@ -17,8 +17,6 @@ the public persistence contract the user relies on for the
 """
 import logging
 
-import pytest
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +35,6 @@ def test_set_theme_updates_value_and_emits_signal():
     exactly one 'changed' signal (when the value actually changes).
     """
     from rayforge.core.config import Config
-    from blinker import Signal
 
     cfg = Config()
     cfg.theme = "dark"  # Start from a non-default to detect no-op.

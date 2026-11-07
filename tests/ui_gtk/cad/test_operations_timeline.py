@@ -1,5 +1,7 @@
 """Unit tests for OperationsTimelineWidget."""
 
+import pytest
+
 from unittest.mock import MagicMock
 from rayforge.ui_gtk.cad.operations_timeline import (
     OperationCard,
@@ -28,9 +30,16 @@ class MockScoreStep:
     passes = 1
 
 
+pytestmark = pytest.mark.ui
+
+
 def test_operation_card_initialization():
     step = MockContourStep()
-    card = OperationCard(step, pass_index=0, total_passes=2)
+    card = OperationCard(
+        step,  # type: ignore[arg-type]
+        pass_index=0,
+        total_passes=2,
+    )
     assert card.pass_index == 0
     assert card.total_passes == 2
     assert card.step == step
@@ -43,7 +52,7 @@ def test_operations_timeline_refresh():
     editor.doc.active_layer.workflow = workflow
 
     timeline = OperationsTimelineWidget(editor)
-    assert len(timeline.cards_container._children) > 0
+    assert timeline.cards_container.get_first_child() is not None
 
 
 def test_operations_timeline_reordering():

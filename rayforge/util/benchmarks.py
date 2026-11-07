@@ -61,7 +61,9 @@ def _stats(samples: List[float]) -> dict:
         "mean": round(statistics.mean(samples), 3),
         "median": round(statistics.median(samples), 3),
         "p95": round(sorted(samples)[int(len(samples) * 0.95)], 3),
-        "stdev": round(statistics.stdev(samples), 3) if len(samples) > 1 else 0,
+        "stdev": (
+            round(statistics.stdev(samples), 3) if len(samples) > 1 else 0
+        ),
         "n": len(samples),
     }
 
@@ -119,6 +121,13 @@ def bench_addon_discovery(iterations: int = 3) -> dict:
     Python imports.
     """
     from rayforge.addon_mgr.addon_manager import AddonManager
+    from rayforge.config import (
+        ADDONS_DIR,
+        BUILTIN_ADDONS_DIR,
+        PRIVATE_ADDONS_DIR,
+    )
+    from rayforge.context import get_context
+    from rayforge.shared.tasker import task_mgr
 
     # The constructor doesn't load addons; just sets up paths.
     # We use a fresh AddonManager to avoid the singleton.
@@ -127,12 +136,15 @@ def bench_addon_discovery(iterations: int = 3) -> dict:
     # AddonManager has no 'discover-only' public API, so we
     # use load_installed_addons with worker_only=True which
     # skips the GTK frontend hook but still parses manifests.
-    from rayforge.config import init_context
-
-    init_context()
+    context = get_context()
     samples = []
     for _ in range(iterations):
-        mgr = AddonManager()
+        mgr = AddonManager(
+            [BUILTIN_ADDONS_DIR, PRIVATE_ADDONS_DIR, ADDONS_DIR],
+            ADDONS_DIR,
+            context.plugin_mgr,
+            task_mgr,
+        )
         t0 = time.perf_counter()
         mgr.load_installed_addons(worker_only=True)
         samples.append((time.perf_counter() - t0) * 1000.0)
@@ -149,7 +161,7 @@ def bench_i18n_lookup(iterations: int = 1000) -> dict:
     from rayforge.shared.util.localized import _
 
     def run() -> None:
-        for _ in range(100):
+        for _i in range(100):
             _("Save")
             _("Open")
             _("Cancel")
@@ -228,7 +240,11 @@ def main() -> int:
             if not old:
                 continue
             delta = r["stats"]["mean"] - old["stats"]["mean"]
-            pct = (delta / old["stats"]["mean"] * 100) if old["stats"]["mean"] else 0
+            pct = (
+                (delta / old["stats"]["mean"] * 100)
+                if old["stats"]["mean"]
+                else 0
+            )
             sign = "+" if delta > 0 else ""
             print(
                 f"  {r['name']:<28} "
@@ -241,7 +257,8 @@ def main() -> int:
                 and pct > args.fail_on_regression
             ):
                 regressions.append(
-                    f"{r['name']}: {pct:.1f}% (limit {args.fail_on_regression}%)"
+                    f"{r['name']}: {pct:.1f}% "
+                    f"(limit {args.fail_on_regression}%)"
                 )
         if regressions:
             print(

@@ -50,7 +50,9 @@ class CadToolPalette(Gtk.Box):
             self,
             _("CAD Tool Palette"),
             role=Gtk.AccessibleRole.TOOLBAR,
-            description=_("Tools for selecting, drawing, and modifying 2D shapes"),
+            description=_(
+                "Tools for selecting, drawing, and modifying 2D shapes"
+            ),
         )
 
         self._build_palette()
@@ -138,6 +140,11 @@ class CadToolPalette(Gtk.Box):
             _("Measure distances, dimensions, and clearances"),
         )
 
+        self._tool_buttons["measure"].set_sensitive(False)
+        self._tool_buttons["measure"].set_tooltip_text(
+            _("Measurement is not yet available from this palette")
+        )
+
         # Set default active
         if "select" in self._tool_buttons:
             self._tool_buttons["select"].set_active(True)
@@ -172,7 +179,9 @@ class CadToolPalette(Gtk.Box):
         self.append(btn)
         return btn
 
-    def _on_button_toggled(self, button: Gtk.ToggleButton, tool_name: str) -> None:
+    def _on_button_toggled(
+        self, button: Gtk.ToggleButton, tool_name: str
+    ) -> None:
         if self._updating_toggle:
             return
 

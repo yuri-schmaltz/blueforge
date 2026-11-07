@@ -36,14 +36,15 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import gi
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gio, GLib, Gtk  # noqa: E402
+from ..shared.util.localized import _  # noqa: E402
 
-from .workspace import (
+from .workspace import (  # noqa: E402
     Workspace,
     _make_default_workspace,
     delete_workspace,
@@ -56,11 +57,11 @@ logger = logging.getLogger(__name__)
 
 
 # Callback signatures for the actions
-WorkspaceCallback = callable  # (action, param) -> None
+WorkspaceCallback = Callable[..., None]  # (action, param) -> None
 
 
 def _make_workspace_callback(
-    config_dir: Path, on_apply: callable
+    config_dir: Path, on_apply: Callable[..., None]
 ) -> Dict[str, WorkspaceCallback]:
     """Build the four GAction callbacks for the
     workspace menu. Returns a dict keyed by action
@@ -154,7 +155,7 @@ DEFAULT_ACCELERATORS: Dict[str, List[str]] = {
 def add_workspace_actions(
     window: Gtk.Window,
     config_dir: Path,
-    on_apply: callable,
+    on_apply: Callable[..., None],
     accelerators: Optional[Dict[str, List[str]]] = None,
 ) -> None:
     """Register the four GActions and the menu items
@@ -218,7 +219,7 @@ def add_workspace_actions(
             "workspace.delete": "delete",
         }[name]
         action.connect("activate", callbacks[key])
-        window.add_action(action)
+        window.add_action(action)  # type: ignore[attr-defined]
         # Register the keyboard accelerator, if any
         if name in accelerators:
             _set_accelerator(action, accelerators[name])
@@ -327,12 +328,12 @@ def build_workspace_submenu(
     let the user know via the name).
     """
     menu = Gio.Menu()
-    menu.append("Reset to default", "workspace.reset")
+    menu.append(_("Reset to default"), "workspace.reset")
     menu.append_section(
-        "Saved", _build_saved_section(config_dir, current)
+        _("Saved"), _build_saved_section(config_dir, current)
     )
     menu.append_section(
-        "Manage", _build_manage_section()
+        _("Manage"), _build_manage_section()
     )
     return menu
 
@@ -363,11 +364,11 @@ def _build_manage_section() -> Gio.Menu:
     # 'workspace.save' action is exposed anyway
     # so a future dialog can call it programmatically.
     section.append(
-        "Save current as… (use Ctrl+Shift+S)",
+        _("Save current as… (use Ctrl+Shift+S)"),
         "workspace.save::",
     )
     section.append(
-        "Delete… (use Ctrl+Shift+D)",
+        _("Delete… (use Ctrl+Shift+D)"),
         "workspace.delete::",
     )
     return section

@@ -62,11 +62,11 @@ USER_MATERIALS_DIR = CONFIG_DIR / "materials"
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
 
 ADDON_REGISTRY_URL = (
-    "https://raw.githubusercontent.com/yuri-schmaltz/pires-forge-addons/"
+    "https://raw.githubusercontent.com/yuri-schmaltz/blueforge-addons/"
     "main/registry.yaml"
 )
 
-# Analytics are disabled in Pires Forge. The upstream Umami endpoint
+# Analytics are disabled in Blueforge. The upstream Umami endpoint
 # is not used; users who want telemetry can opt in via their own
 # reverse-proxy or by setting UMAMI_URL/UMAMI_WEBSITE_ID at build
 # time.

@@ -19,7 +19,7 @@ canvas.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 import gi
 
@@ -129,13 +129,18 @@ class CoordinateBar(Gtk.Box):
 
     # ---- Public API ----
 
-    def set_cursor_position(self, x: Optional[float], y: Optional[float]) -> None:
+    def set_cursor_position(
+        self, x: Optional[float], y: Optional[float]
+    ) -> None:
         """Update the X/Y cursor readouts. Pass None to clear."""
         self._x_label.set_text(f"X: {self._fmt(x)}")
         self._y_label.set_text(f"Y: {self._fmt(y)}")
 
     def set_selection_dimensions(
-        self, length: Optional[float], width: Optional[float], height: Optional[float]
+        self,
+        length: Optional[float],
+        width: Optional[float],
+        height: Optional[float],
     ) -> None:
         """Update the L/W/H selection readouts. Pass None to clear."""
         self._l_label.set_text(f"L: {self._fmt(length)}")
@@ -160,7 +165,9 @@ class CoordinateBar(Gtk.Box):
     def connect_unit_changed(self, callback):
         """Connect a listener that fires when the user changes the
         unit. Callback receives the new unit string (e.g. 'mm')."""
-        return self._unit_combo.connect("changed", self._wrap_unit_signal(callback))
+        return self._unit_combo.connect(
+            "changed", self._wrap_unit_signal(callback)
+        )
 
     # ---- Internal ----
 

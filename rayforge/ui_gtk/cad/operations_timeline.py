@@ -1,5 +1,5 @@
 """
-Operations & Passes Timeline Widget for Pires Forge.
+Operations & Passes Timeline Widget for Blueforge.
 
 Displays a horizontal / vertical sequence of laser passes (Engraving, Scoring,
 Inner Cuts, Outer Contours) with visual ordering, power/speed badges,
@@ -9,9 +9,9 @@ and an intelligent auto-optimization button to guarantee safe cutting sequence.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango
 
 from ...core.undo.list_cmd import ReorderListCommand
 from ...core.workflow import Workflow
@@ -34,8 +34,8 @@ class OperationCard(Gtk.Box):
         step: "Step",
         pass_index: int,
         total_passes: int,
-        on_move_up: Optional[callable] = None,
-        on_move_down: Optional[callable] = None,
+        on_move_up: Optional[Callable[[int], None]] = None,
+        on_move_down: Optional[Callable[[int], None]] = None,
         **kwargs,
     ):
         super().__init__(
@@ -58,7 +58,9 @@ class OperationCard(Gtk.Box):
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
         # Pass number badge
-        badge = Gtk.Label(label=f"Pass {self.pass_index + 1}")
+        badge = Gtk.Label(
+            label=_("Operation {number}").format(number=self.pass_index + 1)
+        )
         badge.add_css_class("forge-statusbar-mode-badge")
         header_box.append(badge)
 
@@ -77,7 +79,7 @@ class OperationCard(Gtk.Box):
 
         step_name = getattr(self.step, "name", _("Operation"))
         name_label = Gtk.Label(label=step_name)
-        name_label.set_ellipsize(3)  # PANGO_ELLIPSIZE_END
+        name_label.set_ellipsize(Pango.EllipsizeMode.END)
         name_label.set_hexpand(True)
         name_label.set_halign(Gtk.Align.START)
         header_box.append(name_label)
@@ -97,7 +99,9 @@ class OperationCard(Gtk.Box):
             down_btn.add_css_class("flat")
             down_btn.set_tooltip_text(_("Move Later in Sequence"))
             down_btn.set_sensitive(self.pass_index < self.total_passes - 1)
-            down_btn.connect("clicked", lambda *_: on_move_down(self.pass_index))
+            down_btn.connect(
+                "clicked", lambda *_: on_move_down(self.pass_index)
+            )
             btn_box.append(down_btn)
 
         header_box.append(btn_box)
@@ -108,16 +112,13 @@ class OperationCard(Gtk.Box):
         param_box.set_margin_top(4)
 
         power_val = getattr(self.step, "power", None)
-        speed_val = getattr(self.step, "speed", None)
-        passes_val = getattr(self.step, "passes", 1)
+        speed_val = getattr(self.step, "cut_speed", None)
 
         info_text = []
         if power_val is not None:
-            info_text.append(f"P: {power_val}%")
+            info_text.append(f"P: {power_val * 100:g}%")
         if speed_val is not None:
-            info_text.append(f"F: {speed_val}mm/s")
-        if passes_val and passes_val > 1:
-            info_text.append(f"{passes_val}x passes")
+            info_text.append(f"F: {speed_val}mm/min")
 
         desc = " | ".join(info_text) if info_text else _("Standard Defaults")
         param_label = Gtk.Label(label=desc)
@@ -149,13 +150,16 @@ class OperationsTimelineWidget(Gtk.Box):
             _("Operations Timeline"),
             role=Gtk.AccessibleRole.GROUP,
             description=_(
-                "Execution timeline of laser passes from engraving to final contour"
+                "Execution timeline of laser passes "
+                "from engraving to final contour"
             ),
         )
 
         self._build_header()
         self._build_scroll_area()
+        self._document = None
         self._connect_signals()
+        self.editor.document_changed.connect(self._on_document_changed)
         self.refresh()
 
     def _build_header(self) -> None:
@@ -171,14 +175,14 @@ class OperationsTimelineWidget(Gtk.Box):
 
         # Auto-Optimize Order Button
         btn_optimize = Gtk.Button(
-            label=_("Auto-Optimize Safe Sequence"),
+            label=_("Sort Operations by Type"),
             child=None,
         )
         btn_optimize.set_tooltip_text(
             _(
-                "Automatically reorder passes: "
-                "1. Engrave ➔ 2. Score ➔ 3. Inner Holes ➔ 4. Outer Contours "
-                "to prevent workpiece drop-out."
+                "Group engraving, scoring, and contour operations "
+                "in this layer. "
+                "Review toolpaths before sending to the machine."
             )
         )
         btn_optimize.connect("clicked", self._on_auto_optimize_clicked)
@@ -200,10 +204,30 @@ class OperationsTimelineWidget(Gtk.Box):
         self.scrolled_window.set_child(self.cards_container)
         self.append(self.scrolled_window)
 
+    @staticmethod
+    def _document_signals(doc):
+        return (
+            doc.updated,
+            doc.active_layer_changed,
+            doc.descendant_added,
+            doc.descendant_removed,
+            doc.descendant_updated,
+        )
+
     def _connect_signals(self) -> None:
-        doc = self.editor.doc
-        doc.updated.connect(lambda *_: self.refresh())
-        doc.active_layer_changed.connect(lambda *_: self.refresh())
+        if self._document is not None:
+            for signal in self._document_signals(self._document):
+                signal.disconnect(self._on_model_changed)
+        self._document = self.editor.doc
+        for signal in self._document_signals(self._document):
+            signal.connect(self._on_model_changed)
+
+    def _on_model_changed(self, sender, **kwargs) -> None:
+        self.refresh()
+
+    def _on_document_changed(self, sender, **kwargs) -> None:
+        self._connect_signals()
+        self.refresh()
 
     def refresh(self) -> None:
         """Rebuilds the timeline cards from the active workflow."""
@@ -213,6 +237,7 @@ class OperationsTimelineWidget(Gtk.Box):
 
         workflow = self._get_active_workflow()
         if not workflow or not workflow.steps:
+            self.title_label.set_label(_("Execution Order Timeline"))
             empty_lbl = Gtk.Label(
                 label=_("No operations defined for this layer.")
             )
@@ -223,7 +248,9 @@ class OperationsTimelineWidget(Gtk.Box):
 
         total_passes = len(workflow.steps)
         self.title_label.set_label(
-            _("Execution Order ({total} passes)").format(total=total_passes)
+            _("Execution Order ({total} operations)").format(
+                total=total_passes
+            )
         )
 
         for i, step in enumerate(workflow.steps):
@@ -282,8 +309,8 @@ class OperationsTimelineWidget(Gtk.Box):
         Sort steps by priority:
         1. Engraving / Raster (priority 10)
         2. Score / Marking (priority 20)
-        3. Contour with remove_inner / Holes (priority 30)
-        4. Outer Contour (priority 40)
+        3. Contour operations (priority 30)
+        4. Other operations (priority 40)
         """
         workflow = self._get_active_workflow()
         if not workflow or len(workflow.steps) <= 1:
@@ -296,19 +323,22 @@ class OperationsTimelineWidget(Gtk.Box):
             elif "score" in name:
                 return 20
             elif "contour" in name:
-                # If inner paths are kept or cut order is inside-out
                 return 30
             return 40
 
         sorted_steps = sorted(workflow.steps, key=_step_priority)
+        if sorted_steps == workflow.steps:
+            return
         setter_name = "set_steps" if hasattr(workflow, "set_steps") else None
         cmd = ReorderListCommand(
             target_obj=workflow,
             list_property_name="steps",
             new_list=sorted_steps,
             setter_method_name=setter_name,
-            name=_("Auto-Optimize Cutting Order"),
+            name=_("Sort Operations by Type"),
         )
         self.editor.history_manager.execute(cmd)
         self.refresh()
-        logger.info("Auto-optimized workflow steps sequence for laser cutting.")
+        logger.info(
+            "Auto-optimized workflow steps sequence for laser cutting."
+        )

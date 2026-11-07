@@ -1408,4 +1408,3 @@ def test_hash_int_key_order_does_not_matter():
     a = _hash_int({"a": 1, "b": 2, "c": [3, 4]})
     b = _hash_int({"c": [3, 4], "b": 2, "a": 1})
     assert a == b
-

@@ -31,7 +31,6 @@ caller to do anything special.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import gi
 
@@ -67,7 +66,8 @@ def propagate_tooltip_to_accessible_label(widget: Gtk.Widget) -> None:
         # not perfectly equivalent (description != label) but it
         # gives screen readers *something* to announce.
         try:
-            widget.get_accessible_object().set_description(tooltip)
+            obj = widget.get_accessible_object()  # type: ignore
+            obj.set_description(tooltip)
         except Exception:
             logger.debug(
                 "Could not set accessible label on %s: %s",
@@ -85,13 +85,20 @@ def prefers_reduced_motion() -> bool:
     animations, callers should switch to non-animated transitions.
     """
     try:
-        seat = Gdk.Display.get_default().get_default_seat()
+        display = Gdk.Display.get_default()
+        if display is None:
+            return False
+        seat = display.get_default_seat()
         if seat is None:
             return False
         device = seat.get_keyboard()
         if device is None:
             return False
-        settings = device.get_settings() if hasattr(device, "get_settings") else None
+        settings = (
+            device.get_settings()  # type: ignore[attr-defined]
+            if hasattr(device, "get_settings")
+            else None
+        )
         # The above path doesn't exist in all GTK 4.x; the canonical
         # way is Gtk.Settings.get_default(). Some GTK versions also
         # expose this via Gdk.Display.
@@ -190,7 +197,7 @@ def install_motion_preference_listener(window: Gtk.Window) -> None:
     # avoid recursion and a hasattr check to make this idempotent.
     if getattr(window, "_motion_listener_installed", False):
         return
-    window._motion_listener_installed = True
+    window._motion_listener_installed = True  # type: ignore[attr-defined]
 
     def _on_anim_setting_changed(_settings, _pspec):
         apply_motion_preference_recursive(window)

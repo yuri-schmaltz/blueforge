@@ -6,8 +6,8 @@ run on bare CI without PyGObject / Gtk installed. When gi is not
 available, every test in this module is skipped — the real
 exercises happen on workstations with GTK present.
 """
-import sys
-from unittest.mock import MagicMock, patch
+import importlib
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,17 +15,14 @@ import pytest
 # Try the real import first; on bare CI this will fail and the
 # whole module will be skipped.
 try:
-    import rayforge.ui_gtk.shared.a11y as a11y_module
-    HAS_A11Y = True
+    a11y_module = importlib.import_module(
+        "rayforge.ui_gtk.shared.a11y"
+    )
 except Exception as exc:  # pragma: no cover - environment-dependent
-    HAS_A11Y = False
-    _SKIP_REASON = f"a11y module not importable: {exc}"
-
-
-pytestmark = pytest.mark.skipif(
-    not HAS_A11Y,
-    reason=locals().get("_SKIP_REASON", "a11y module not importable"),
-)
+    pytest.skip(
+        f"a11y module not importable: {exc}",
+        allow_module_level=True,
+    )
 
 
 # A small fake Gtk namespace to back the helper functions when
@@ -108,7 +105,6 @@ def test_apply_motion_zeroes_stack_transitions(fake_gtk):
     # Make isinstance(stack, Gtk.Stack) return True. Easiest
     # way: assign the spec class explicitly.
     stack.__class__ = fake_gtk.Stack
-    child = MagicMock()
     stack.get_first_child.return_value = None
     a11y_module.apply_motion_preference_recursive(stack)
     # The helper should have set CROSSFADE + 0 duration on the stack.

@@ -330,13 +330,14 @@ class MainWindow(Adw.ApplicationWindow):
         self._connect_toolbar_signals()
         main_ui_box.append(self.toolbar)
 
-        # Contextual CAD Ribbon (alignment, distribution, aspect ratio constraints)
+        # Contextual CAD Ribbon (alignment, distribution, ratio)
         from .cad import CadInspectorTab, CadRibbon, CadToolPalette
 
         self.cad_ribbon = CadRibbon(self)
         main_ui_box.append(self.cad_ribbon)
 
-        # Create an overlay so the right panel and left CAD palette float above canvas.
+        # Overlay so the right panel and left CAD palette float
+        # above the canvas.
         self._canvas_overlay = Gtk.Overlay()
         self._canvas_overlay.set_vexpand(True)
         main_ui_box.append(self._canvas_overlay)
@@ -719,7 +720,7 @@ class MainWindow(Adw.ApplicationWindow):
                 _make_default_workspace,
             )
             from pathlib import Path
-            from ..config import config_dir
+            from ..config import CONFIG_DIR as config_dir
 
             ws_list = list_workspaces(Path(config_dir))
             # Future: let the user pick via menu; for now
@@ -1406,7 +1407,9 @@ class MainWindow(Adw.ApplicationWindow):
         button. Mode is 'all' (every button visible) or 'essential'
         (curated subset). Stored in config.toolbar_mode."""
         show_all = kwargs.get("show_all", False)
-        get_context().config.set_toolbar_mode("all" if show_all else "essential")
+        get_context().config.set_toolbar_mode(
+            "all" if show_all else "essential"
+        )
 
     def on_panel_layout_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -2033,7 +2036,9 @@ class MainWindow(Adw.ApplicationWindow):
         }
         # Anything that isn't explicitly "light" or "dark" — including
         # "system" and unknown values — uses DEFAULT (follows OS).
-        style_manager.set_color_scheme(scheme_map.get(theme, Adw.ColorScheme.DEFAULT))
+        style_manager.set_color_scheme(
+            scheme_map.get(theme, Adw.ColorScheme.DEFAULT)
+        )
 
     def apply_ui_density(self):
         """Toggle the .forge-density-compact style class based on
@@ -2133,7 +2138,9 @@ class MainWindow(Adw.ApplicationWindow):
                 hasattr(self, "action_manager")
                 and "add-tabs-equidistant" in self.action_manager.actions
             ):
-                self.action_manager.actions["add-tabs-equidistant"].activate(None)
+                self.action_manager.actions[
+                    "add-tabs-equidistant"
+                ].activate(None)
         elif tool_name == "offset":
             if hasattr(self, "_right_pane_stack"):
                 try:
@@ -2151,47 +2158,37 @@ class MainWindow(Adw.ApplicationWindow):
         shortcut_ctrl = Gtk.ShortcutController()
         shortcut_ctrl.set_scope(Gtk.ShortcutScope.MANAGED)
         trigger = Gtk.ShortcutTrigger.parse_string(
-            f"{PRIMARY_ACCEL}shift+p"
+            f"{PRIMARY_ACCEL}<Shift>p"
         )
         if trigger is None:
             logger.warning("Could not parse Ctrl+Shift+P shortcut")
             return
-        action = Gtk.ShortcutAction.parse_string("signal::open-palette")
-        if action is None:
-            logger.warning("Could not parse open-palette action")
-            return
+        action = Gtk.CallbackAction.new(
+            lambda *_: self._open_command_palette() or True
+        )
         shortcut = Gtk.Shortcut(trigger=trigger, action=action)
         shortcut_ctrl.add_shortcut(shortcut)
         self.add_controller(shortcut_ctrl)
-        # Connect the signal: when the shortcut fires, open the palette.
-        self.connect("open-palette", lambda *_: self._open_command_palette())
 
     def _install_insights_shortcut(self):
         """Register Ctrl+Shift+I as the open-insights shortcut.
 
-        Mirrors the pattern in _install_palette_shortcut.
-        The action is a signal 'open-insights' that this
-        method also connects to."""
+        Uses the same callback pattern as the command palette."""
         from .shared.keyboard import PRIMARY_ACCEL
 
         shortcut_ctrl = Gtk.ShortcutController()
         shortcut_ctrl.set_scope(Gtk.ShortcutScope.MANAGED)
         trigger = Gtk.ShortcutTrigger.parse_string(
-            f"{PRIMARY_ACCEL}shift+i"
+            f"{PRIMARY_ACCEL}<Shift>i"
         )
         if trigger is None:
             return
-        action = Gtk.ShortcutAction.parse_string(
-            "signal::open-insights"
+        action = Gtk.CallbackAction.new(
+            lambda *_: self._show_insights() or True
         )
-        if action is None:
-            return
         shortcut = Gtk.Shortcut(trigger=trigger, action=action)
         shortcut_ctrl.add_shortcut(shortcut)
         self.add_controller(shortcut_ctrl)
-        self.connect(
-            "open-insights", lambda *_: self._show_insights()
-        )
 
     def _open_command_palette(self):
         """Build (once) and present the command palette overlay."""
@@ -2213,7 +2210,7 @@ class MainWindow(Adw.ApplicationWindow):
             window.set_child(palette)
             self._command_palette_window = window
             # Keep a reference to the palette so it isn't GC'd.
-            window._palette = palette
+            window._palette = palette  # type: ignore[attr-defined]
         self._command_palette_window.present()
 
     def _show_walkthrough(self) -> bool:
@@ -2228,20 +2225,21 @@ class MainWindow(Adw.ApplicationWindow):
         from .walkthrough import WalkthroughDialog
 
         if self._walkthrough is not None:
-            self._walkthrough.present()
+            self._walkthrough.present(self)
             return False
-        dialog = WalkthroughDialog(transient_for=self)
+        dialog = WalkthroughDialog()
         dialog.set_can_close(False)  # user must click Skip or Done
         # Persist 'seen' on any dismissal: Skip, Done, or
         # close-attempt. We attach a single handler that always
         # marks the flag, so even an unexpected close path
         # (Esc on the header, etc.) does the right thing.
+
         def _on_close(_dlg):
             get_context().config.set_walkthrough_seen(True)
             self._walkthrough = None
         dialog.connect("closed", _on_close)
         self._walkthrough = dialog
-        dialog.present()
+        dialog.present(self)
         return False  # remove the idle source
 
     def trigger_coach_mark(self, zone: str, parent: Gtk.Widget) -> None:
@@ -2302,6 +2300,7 @@ class MainWindow(Adw.ApplicationWindow):
             # closed (auto-timeout, button click, or autohide).
             # We use it to persist the seen flag and clear
             # the cache so a re-shown zone gets a fresh popover.
+
             def _on_dismiss(_popover, dismissed_zone: str):
                 get_context().config.mark_coach_mark_seen(
                     dismissed_zone

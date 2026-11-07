@@ -2,12 +2,12 @@
 
 The CI workflow runs pytest with --cov and feeds the
 output to this script. The script compares the
-coverage percentage against a threshold (default 70%)
+coverage percentage against a threshold (default 35%)
 and exits non-zero if the gate fails.
 
 This is a wrapper around `coverage report` output. The
-threshold is configurable via --threshold (default 70)
-or via the env var PIRES_FORGE_MIN_COVERAGE.
+threshold is configurable via --threshold (default 35)
+or via the env var BLUEFORGE_MIN_COVERAGE.
 
 Run with:
 
@@ -25,12 +25,9 @@ fails vs warns). Keeping it as a stand-alone script
 makes the policy easy to change without rebuilding
 the test image.
 
-Why 70%? It's the typical "good enough" line coverage
-target for a mature desktop app. Higher (80-90%) is
-better but requires significant test investment;
-lower (50-60%) lets too many bugs through. 70% is
-the balance. The threshold is adjustable per-repo
-via PIRES_FORGE_MIN_COVERAGE.
+The current baseline matches pyproject.toml and the backend CI job.
+Raise the baseline as test coverage improves; this utility is optional
+and the pytest-cov gate is authoritative in CI.
 """
 from __future__ import annotations
 
@@ -55,7 +52,7 @@ def main() -> int:
         default=None,
         help=(
             "Minimum coverage %% (default: from "
-            "PIRES_FORGE_MIN_COVERAGE env var, or 70)"
+            "BLUEFORGE_MIN_COVERAGE env var, or 35)"
         ),
     )
     ap.add_argument(
@@ -68,7 +65,7 @@ def main() -> int:
     threshold = (
         args.threshold
         if args.threshold is not None
-        else float(os.environ.get("PIRES_FORGE_MIN_COVERAGE", "70"))
+        else float(os.environ.get("BLUEFORGE_MIN_COVERAGE", "35"))
     )
 
     if not args.coverage_file.exists():

@@ -86,22 +86,22 @@ def set_a11y_label(
         except Exception:  # pragma: no cover
             pass
     try:
-        widget.set_accessible_label(label)
+        widget.set_accessible_label(label)  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover
         pass
-    if description is not None:
-        try:
-            widget.set_accessible_description(description)
-        except Exception:  # pragma: no cover
-            pass
     if tooltip is not None:
         widget.set_tooltip_text(tooltip)
-        # If no explicit description, use the tooltip.
-        if description is None:
-            try:
-                widget.set_accessible_description(tooltip)
-            except Exception:  # pragma: no cover
-                pass
+    # If no explicit description, use the tooltip.
+    effective_description = (
+        description if description is not None else tooltip
+    )
+    if effective_description is not None:
+        try:
+            widget.set_accessible_description(  # type: ignore[attr-defined]
+                effective_description
+            )
+        except Exception:  # pragma: no cover
+            pass
 
 
 def mark_live_region(
@@ -125,7 +125,8 @@ def mark_live_region(
     # 'polite' / 'assertive' / 'off'.
     try:
         widget.update_property(
-            [Gtk.AccessibleProperty.LIVE], [int(polite)]
+            [Gtk.AccessibleProperty.LIVE],  # type: ignore[attr-defined]
+            [int(polite)],
         )
     except Exception:  # pragma: no cover
         # Older GTK or different bridge: skip silently.

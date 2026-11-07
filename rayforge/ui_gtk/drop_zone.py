@@ -37,14 +37,14 @@ without explicit re-registration.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import gi
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk  # noqa: E402
 
-from .drag_controller import ZoneBounds
+from .drag_controller import ZoneBounds  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class DropZoneRegistry:
                 continue
             alloc = zone.get_allocation()
             # Translate to root coordinates
-            ok, rx, ry = zone.translate_coordinates(
+            ok, rx, ry = zone.translate_coordinates(  # type: ignore
                 root, 0, 0
             )
             if not ok:

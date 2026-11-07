@@ -48,20 +48,17 @@ from typing import Optional
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import GObject, Gtk  # noqa: E402
+from gi.repository import Gtk  # noqa: E402
 
-from .dock_layout import DockLayout, Zone
-from .drag_controller import DragController
-from .drag_handle import DragHandle
-from .drop_zone import DropZone, DropZoneRegistry
-from .workspace_menu import (
+from .dock_layout import DockLayout, Zone  # noqa: E402
+from .drag_controller import DragController  # noqa: E402
+from .drag_handle import DragHandle  # noqa: E402
+from .drop_zone import DropZone, DropZoneRegistry  # noqa: E402
+from .workspace_menu import (  # noqa: E402
     add_workspace_actions,
     build_workspace_submenu,
 )
-from .workspace import (
-    _make_default_workspace,
-    list_workspaces,
-    load_workspace,
+from .workspace import (  # noqa: E402
     save_workspace,
     Workspace,
 )
@@ -134,7 +131,7 @@ def setup_dockable(window) -> None:
 
     # 6. Register workspace GActions
     try:
-        from ..config import config_dir as _config_dir
+        from ..config import CONFIG_DIR as _config_dir
 
         add_workspace_actions(
             window,
@@ -243,7 +240,7 @@ def _install_drag_handles(window) -> None:
     registry = window._dockable_zones
     controller = window._dockable_controller
 
-    def _wire(surface: str, parent: Gtk.Widget) -> None:
+    def _wire(surface: str, parent: Optional[Gtk.Widget]) -> None:
         if parent is None:
             return
         handle = DragHandle(surface, label=f"≡ {surface}")
@@ -318,7 +315,9 @@ def _attach_handle_to_widget(
             if idx < 0:
                 return
             # Insert the handle just above the parent
-            old_parent.insert_child_at_idx(idx, handle)
+            old_parent.insert_child_at_idx(  # type: ignore[attr-defined]
+                idx, handle
+            )
         else:
             # For Adw.Overlay, GtkOverlay, etc. the
             # ordering is implicit (last is on top).
@@ -340,7 +339,11 @@ def _index_of_child(
     not found."""
     n = box.observe_children()
     for i in range(n.get_n_items()):
-        if n.get_item(i).get_object() is child:
+        item = n.get_item(i)
+        if (
+            item is not None
+            and item.get_object() is child  # type: ignore[attr-defined]
+        ):
             return i
     return -1
 
@@ -368,7 +371,7 @@ def _install_workspace_submenu(window) -> None:
             # Got the View submenu. Insert a Workspace
             # submenu as a new top-level section.
             try:
-                from ..config import config_dir as _config_dir
+                from ..config import CONFIG_DIR as _config_dir
 
                 ws_submenu = build_workspace_submenu(
                     Path(_config_dir),
@@ -419,7 +422,7 @@ def _on_surface_dropped(
     _rearrange_from_layout(window)
     # Persist the new layout
     try:
-        from ..config import config_dir as _config_dir
+        from ..config import CONFIG_DIR as _config_dir
         from pathlib import Path
 
         ws = Workspace(
@@ -657,17 +660,6 @@ def _reparent_bottom_panel(
                 current_parent.append(bottom)
             except Exception:
                 pass
-
-
-def _zone_for_surface(layout: DockLayout, surface: str) -> Optional[Zone]:
-    """Return which zone currently holds the given
-    surface, or None if not found.
-    (Shared helper, used by both reparenting
-    functions and _on_surface_dropped.)"""
-    for z in Zone:
-        if getattr(layout, z.value, "") == surface:
-            return z
-    return None
 
 
 def _surface_to_widget(window, surface: str):

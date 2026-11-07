@@ -1,7 +1,12 @@
 """Unit tests for CadRibbon."""
 
+import pytest
+
 from unittest.mock import MagicMock
 from rayforge.ui_gtk.cad.cad_ribbon import CadRibbon
+
+
+pytestmark = pytest.mark.ui
 
 
 def test_cad_ribbon_initialization():
@@ -19,28 +24,28 @@ def test_cad_ribbon_sensitivity_per_selection_count():
     # 0 items selected
     ribbon.on_selection_changed([])
     assert ribbon._btn_align_left.get_visible() is True
-    assert ribbon._width_spin._sensitive is False
-    assert ribbon._btn_group._sensitive is False
-    assert ribbon._btn_spread_h._sensitive is False
+    assert ribbon._width_spin.get_sensitive() is False
+    assert ribbon._btn_group.get_sensitive() is False
+    assert ribbon._btn_spread_h.get_sensitive() is False
 
     # 1 item selected
     item1 = MagicMock()
     ribbon.on_selection_changed([item1])
-    assert ribbon._width_spin._sensitive is True
-    assert ribbon._btn_align_left._sensitive is True
-    assert ribbon._btn_group._sensitive is False
-    assert ribbon._btn_spread_h._sensitive is False
+    assert ribbon._width_spin.get_sensitive() is True
+    assert ribbon._btn_align_left.get_sensitive() is True
+    assert ribbon._btn_group.get_sensitive() is False
+    assert ribbon._btn_spread_h.get_sensitive() is False
 
     # 2 items selected
     item2 = MagicMock()
     ribbon.on_selection_changed([item1, item2])
-    assert ribbon._btn_group._sensitive is True
-    assert ribbon._btn_spread_h._sensitive is False
+    assert ribbon._btn_group.get_sensitive() is True
+    assert ribbon._btn_spread_h.get_sensitive() is False
 
     # 3 items selected
     item3 = MagicMock()
     ribbon.on_selection_changed([item1, item2, item3])
-    assert ribbon._btn_spread_h._sensitive is True
+    assert ribbon._btn_spread_h.get_sensitive() is True
 
 
 def test_cad_ribbon_aspect_ratio_toggle():

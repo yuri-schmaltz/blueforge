@@ -36,8 +36,6 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-import pytest
-
 # Suppress the GUI warnings during tests; we don't care
 # about the splash / log spam.
 logging.basicConfig(level=logging.WARNING)
@@ -98,15 +96,23 @@ def _launch_main_window():
     os.environ.setdefault("RAYFORGE_LANG", "en")
     # We deliberately use a no-op for the splash to keep
     # the test fast.
-    from rayforge.context import init_context
-    from rayforge.ui_gtk.mainwindow import MainWindow
     import tempfile
-    import rayforge.config as cfg
 
-    tmpdir = tempfile.mkdtemp(prefix="rayforge-test-")
-    cfg.config_dir = tmpdir
-    # Initialize context (loads addons, sets up logging).
-    init_context()
+    # Isolate the config directory before ``rayforge.config`` is
+    # imported (it reads RAYFORGE_CONFIG_DIR at import time).
+    # ``tests/conftest.py`` already does this for the pytest run;
+    # the explicit assignment keeps the standalone
+    # ``python3 tests/gui/__init__.py`` invocation isolated too.
+    if "RAYFORGE_CONFIG_DIR" not in os.environ:
+        os.environ["RAYFORGE_CONFIG_DIR"] = tempfile.mkdtemp(
+            prefix="rayforge-test-"
+        )
+    from rayforge.context import get_context
+    from rayforge.ui_gtk.mainwindow import MainWindow
+
+    # Initialize the global context. MainWindow pulls in the addon
+    # manager, which loads the addons the same way startup does.
+    get_context()
     win = MainWindow()
     return win
 
@@ -147,7 +153,9 @@ class TestMainWindow:
             widgets = _collect_widgets(win)
             found = any(
                 "forge-coordinate-bar" in (
-                    w.get_css_classes() if hasattr(w, "get_css_classes") else []
+                    w.get_css_classes()
+                    if hasattr(w, "get_css_classes")
+                    else []
                 )
                 for w in widgets
             )
@@ -269,7 +277,7 @@ class TestMainWindow:
         """
         win = _launch_main_window()
         try:
-            from rayforge.core.config import get_context
+            from rayforge.context import get_context
 
             cfg = get_context().config
             cfg.set_panel_layout("compact")
@@ -291,10 +299,7 @@ class TestMainWindow:
         Records 2 more, verifies top_actions returns the
         right (name, count) tuples.
         """
-        from rayforge.util.local_tracker import (
-            LocalTracker,
-            get_local_tracker,
-        )
+        from rayforge.util.local_tracker import LocalTracker
 
         t = LocalTracker()
         t.reset_session()

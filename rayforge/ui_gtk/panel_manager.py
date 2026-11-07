@@ -31,20 +31,42 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Layout preset → (right_panel_visible, bottom_panel_visible, cad_palette, cad_ribbon).
+# Layout preset → (right_panel_visible, bottom_panel_visible,
+# cad_palette, cad_ribbon).
 # 'toolbar' isn't included here because the toolbar already has
 # its own mode toggle in the MainToolbar; mixing it in here
 # would conflate two concerns.
 _PRESETS = {
-    "default": {"right": True, "bottom": True, "cad_palette": True, "cad_ribbon": True},
-    "compact": {"right": True, "bottom": False, "cad_palette": True, "cad_ribbon": False},
-    "expanded": {"right": False, "bottom": True, "cad_palette": False, "cad_ribbon": False},
-    "cad_studio": {"right": True, "bottom": True, "cad_palette": True, "cad_ribbon": True},
+    "default": {
+        "right": True,
+        "bottom": True,
+        "cad_palette": True,
+        "cad_ribbon": True,
+    },
+    "compact": {
+        "right": True,
+        "bottom": False,
+        "cad_palette": True,
+        "cad_ribbon": False,
+    },
+    "expanded": {
+        "right": False,
+        "bottom": True,
+        "cad_palette": False,
+        "cad_ribbon": False,
+    },
+    "cad_studio": {
+        "right": True,
+        "bottom": True,
+        "cad_palette": True,
+        "cad_ribbon": True,
+    },
 }
 
 
 class PanelManager:
-    """Coordinates show/hide of the right + bottom panels and CAD studio surfaces.
+    """Coordinates show/hide of the right + bottom panels and CAD
+    studio surfaces.
 
     Holds weak references to the widgets it controls. The
     MainWindow calls apply_layout() whenever config changes

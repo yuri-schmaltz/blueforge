@@ -26,12 +26,12 @@ Implementation:
 from __future__ import annotations
 
 import logging
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List
 
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gdk, Gio, GLib, GObject, Gtk  # noqa: E402
+from gi.repository import Gdk, Gio, GObject, Gtk  # noqa: E402
 
 from ..shared.util.localized import _  # noqa: E402
 
@@ -51,7 +51,9 @@ class _PaletteEntry(GObject.Object):
         self._action = action
         self._label = label
         self._detail = detail
-        self._search_key = (label + " " + action.get_name() + " " + detail).lower()
+        self._search_key = (
+            label + " " + action.get_name() + " " + detail
+        ).lower()
 
     def matches(self, query: str) -> bool:
         if not query:
@@ -67,7 +69,9 @@ class _PaletteEntry(GObject.Object):
         if self._label.lower().startswith(q):
             return 100
         # Word-boundary match (e.g. 'theme' matches 'Switch theme')
-        if any(word.startswith(q) for word in self._label.lower().split()):
+        if any(
+            word.startswith(q) for word in self._label.lower().split()
+        ):
             return 50
         if q in self._search_key:
             return 10
@@ -77,7 +81,9 @@ class _PaletteEntry(GObject.Object):
         try:
             self._action.activate(None)
         except Exception as exc:  # pragma: no cover
-            logger.warning("Failed to activate %s: %s", self._action.get_name(), exc)
+            logger.warning(
+                "Failed to activate %s: %s", self._action.get_name(), exc
+            )
 
     # GObject properties for ListView binding
     @GObject.Property(type=str)
@@ -185,7 +191,8 @@ class CommandPalette(Gtk.Box):
         stateful ones whose enabled state we can read safely.
         """
         self._all_entries.clear()
-        for action_name in sorted(action_map.list_actions()):
+        action_names = action_map.list_actions()  # type: ignore[attr-defined]
+        for action_name in sorted(action_names):
             if action_name.startswith("app."):
                 # Skip app-level actions (quit, about, preferences)
                 # to keep the palette focused on the workspace.
@@ -214,7 +221,7 @@ class CommandPalette(Gtk.Box):
         scored = [(s, e) for s, e in scored if s > 0]
         scored.sort(key=lambda x: -x[0])
         self._model.remove_all()
-        for _, e in scored[:50]:  # cap visible list to 50
+        for _score, e in scored[:50]:  # cap visible list to 50
             self._model.append(e)
         # Auto-select the first row so Enter activates it.
         if self._model.get_n_items() > 0:
@@ -235,7 +242,7 @@ class CommandPalette(Gtk.Box):
         if 0 <= position < self._model.get_n_items():
             entry = self._model.get_item(position)
             if entry is not None:
-                entry.activate()
+                entry.activate()  # type: ignore[attr-defined]
                 self._on_close()
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
@@ -250,7 +257,7 @@ class CommandPalette(Gtk.Box):
             if pos != invalid and pos >= 0:
                 entry = self._model.get_item(pos)
                 if entry is not None:
-                    entry.activate()
+                    entry.activate()  # type: ignore[attr-defined]
                     self._on_close()
                     return True
         if keyval == Gdk.KEY_Down:

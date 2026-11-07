@@ -7,7 +7,7 @@ A workspace is a named bundle of UI preferences:
   - Toolbar mode (essential/all)
   - Walkthrough_seen (one-time flag)
 
-Workspaces are saved to ~/.config/pires-forge/
+Workspaces are saved to ~/.config/rayforge/
 workspaces/<name>.json. The 'default' workspace is
 created automatically on first launch; users can
 duplicate it to create variations.
@@ -96,7 +96,7 @@ def workspace_dir(config_dir: Path) -> Path:
     """Return the directory where workspaces are stored.
 
     The directory is created on first access. Layout:
-    ~/.config/pires-forge/workspaces/<name>.json
+    ~/.config/rayforge/workspaces/<name>.json
     """
     d = config_dir / "workspaces"
     d.mkdir(parents=True, exist_ok=True)

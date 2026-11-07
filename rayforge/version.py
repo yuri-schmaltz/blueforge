@@ -4,6 +4,8 @@ import subprocess
 import sys
 from typing import Optional
 
+SOURCE_VERSION = "1.3.3"
+
 __dir__ = os.path.dirname(__file__)
 
 
@@ -46,9 +48,7 @@ def get_version_from_pkg() -> Optional[str]:
     except ImportError:
         return None
 
-    # Try the upstream name first; the Debian package
-    # renamed it to 'pires-forge' so we fall back to that.
-    for dist_name in ("rayforge", "pires-forge"):
+    for dist_name in ("blueforge", "rayforge"):
         try:
             v = version(dist_name)
             if v:

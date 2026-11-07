@@ -36,14 +36,18 @@ xgettext is a gettext standard tool, available in:
   - macOS: brew install gettext
   - Windows: MSYS2 gettext-devel
 """
+
 from __future__ import annotations
 
 import argparse
-import hashlib
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+from ..version import SOURCE_VERSION
 
 
 def _run(cmd: list, check: bool = True) -> int:
@@ -61,7 +65,7 @@ def extract_pot(repo_root: Path, output: Path) -> None:
       --keyword=_          : extract _(s) calls
       --from-code=UTF-8    : source is UTF-8
       --add-comments=TRANSLATORS : keep TRANSLATORS: comments
-      --package-name=Pires Forge
+      --package-name=Blueforge
       --package-version=1.0.0
       --copyright-holder=Yuri Schmaltz
     """
@@ -72,8 +76,9 @@ def extract_pot(repo_root: Path, output: Path) -> None:
         "--keyword=ngettext:1,2",
         "--from-code=UTF-8",
         "--add-comments=TRANSLATORS",
-        "--package-name=Pires Forge",
-        "--package-version=1.0.0",
+        "--package-name=Blueforge",
+        f"--package-version={SOURCE_VERSION}",
+        "--add-location=file",
         "--copyright-holder=Yuri Schmaltz",
         "--msgid-bugs-address=security@yuri-schmaltz.dev",
         "--output=" + str(output),
@@ -85,9 +90,17 @@ def extract_pot(repo_root: Path, output: Path) -> None:
         # Skip tests, __pycache__, and the extracted POT
         # directory itself.
         parts = py.parts
-        if "tests" in parts or "__pycache__" in parts:
+        if any(
+            part in parts
+            for part in (
+                "tests",
+                "__pycache__",
+                "builtin_addons",
+                "private_addons",
+            )
+        ):
             continue
-        sources.append(str(py))
+        sources.append(py.relative_to(repo_root).as_posix())
     cmd.extend(sources)
     _run(cmd)
 
@@ -113,7 +126,7 @@ def merge_po(repo_root: Path, pot: Path) -> int:
             # msgmerge writes to a temp file then moves
             # the result in place, so an interrupted run
             # doesn't corrupt the .po.
-            tmp = po.with_suffix(".po.new")
+            before = po.read_bytes()
             cmd = [
                 "msgmerge",
                 "--update",
@@ -123,18 +136,17 @@ def merge_po(repo_root: Path, pot: Path) -> int:
                 str(pot),
             ]
             _run(cmd)
-            # msgmerge --update always rewrites; check if
-            # the content actually changed.
-            with open(po, "rb") as f:
-                new_hash = hashlib.sha256(f.read()).hexdigest()
-            with open(tmp, "rb") as f:
-                old_hash = hashlib.sha256(f.read()).hexdigest() if tmp.exists() else None
-            if new_hash != old_hash:
+            if po.read_bytes() != before:
                 changed += 1
                 print(f"  updated {po.relative_to(repo_root)}")
-            if tmp.exists():
-                tmp.unlink()
     return changed
+
+
+def catalog_content(path: Path) -> str:
+    """Ignore the extraction timestamp when comparing catalogs."""
+    return re.sub(
+        r'^"POT-Creation-Date:.*\n', "", path.read_text(), flags=re.M
+    )
 
 
 def main() -> int:
@@ -165,29 +177,22 @@ def main() -> int:
         print("msgmerge not found; install gettext")
         return 1
 
-    # Save current .pot hash (if --check) for diff
-    if args.check and pot.exists():
-        with open(pot, "rb") as f:
-            before = hashlib.sha256(f.read()).hexdigest()
-    else:
-        before = None
-
-    extract_pot(repo_root, pot)
-
-    if args.check and before is not None:
-        with open(pot, "rb") as f:
-            after = hashlib.sha256(f.read()).hexdigest()
-        if before != after:
-            print(
-                f"\nFAIL: rayforge.pot changed.\n"
-                f"  before: {before[:12]}...\n"
-                f"  after:  {after[:12]}...\n"
-                f"Run \`python3 -m rayforge.util.i18n_extract\` "
-                f"locally and commit the result."
-            )
-            return 2
+    if args.check:
+        # Check in a temporary directory: CI must not rewrite the catalog.
+        with tempfile.TemporaryDirectory(prefix="blueforge-i18n-") as temp:
+            generated = Path(temp) / "rayforge.pot"
+            extract_pot(repo_root, generated)
+            if not pot.exists() or catalog_content(pot) != catalog_content(
+                generated
+            ):
+                print(
+                    "FAIL: rayforge.pot is stale; run i18n_extract --no-merge"
+                )
+                return 2
         print("OK: rayforge.pot unchanged")
         return 0
+
+    extract_pot(repo_root, pot)
 
     if args.no_merge:
         print(f"\nWrote {pot}")

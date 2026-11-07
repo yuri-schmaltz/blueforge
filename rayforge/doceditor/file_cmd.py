@@ -994,7 +994,7 @@ class FileCmd:
         Exports a workpiece to a file.
 
         Supports multiple formats based on file extension:
-        - .rfs: Pires Forge Sketch (parametric, sketch-based only)
+        - .rfs: Blueforge Sketch (parametric, sketch-based only)
         - .svg: SVG format
         - .dxf: DXF format
 

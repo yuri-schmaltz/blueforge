@@ -45,7 +45,8 @@ class StatusBar(Gtk.Box):
     """The persistent status bar at the bottom of the main window.
 
     Layout (left to right):
-        [MODE BADGE]  [X: 12.3]  [Y: 45.6]  |  [Layer 2/3]  [Op: Engrave]  |  [PROGRESS BAR]
+        [MODE BADGE]  [X: 12.3]  [Y: 45.6]  |  [Layer 2/3]
+        [Op: Engrave]  |  [PROGRESS BAR]
     """
 
     def __init__(self, **kwargs) -> None:
@@ -169,7 +170,9 @@ class StatusBar(Gtk.Box):
         except Exception:  # pragma: no cover
             pass
 
-    def set_cursor_position(self, x: Optional[float], y: Optional[float]) -> None:
+    def set_cursor_position(
+        self, x: Optional[float], y: Optional[float]
+    ) -> None:
         """Set the cursor coordinates shown in the status bar.
 
         Pass None for either axis to show '—' (no data).
@@ -184,7 +187,9 @@ class StatusBar(Gtk.Box):
         else:
             self._y_label.set_text(_("Y: %.2f") % y)
 
-    def set_layer_info(self, current: Optional[int], total: Optional[int]) -> None:
+    def set_layer_info(
+        self, current: Optional[int], total: Optional[int]
+    ) -> None:
         """Show the current layer index and total count.
 
         Pass None for either to omit (shows 'No layer').

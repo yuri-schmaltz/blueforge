@@ -34,7 +34,9 @@ _real_asyncio_sleep = asyncio.sleep
 
 
 async def _fast_sleep(seconds):
-    await _real_asyncio_sleep(0)
+    # Keep polling paced: a zero-delay loop queues M114 replies faster
+    # than a real serial device can drain them, especially under coverage.
+    await _real_asyncio_sleep(min(seconds, 0.05))
 
 
 class MarlinSimulator:

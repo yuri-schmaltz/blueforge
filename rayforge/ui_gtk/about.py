@@ -249,7 +249,7 @@ class AboutDialog(PatchedDialogWindow):
         hero_box.set_halign(Gtk.Align.CENTER)
         content_box.append(hero_box)
 
-        icon = get_icon("org.piresforge.pires-forge")
+        icon = get_icon("org.blueforge.blueforge")
         icon.set_pixel_size(128)
         hero_box.append(icon)
 
@@ -391,7 +391,7 @@ class AboutDialog(PatchedDialogWindow):
         thank_you_label.set_markup(
             "<i>"
             + _(
-                "Pires Forge is an independent fork. Special thanks to "
+                "Blueforge is an independent fork. Special thanks to "
                 "the upstream Rayforge project and its contributors for "
                 "the original codebase."
             )

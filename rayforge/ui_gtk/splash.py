@@ -68,7 +68,7 @@ class SplashScreen(Gtk.Window):
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_title(_("Pires Forge"))
+        self.set_title(_("Blueforge"))
         self.set_resizable(False)
         self.set_decorated(False)
         # No input focus while loading. (Gtk 4 removed
@@ -142,14 +142,14 @@ class SplashScreen(Gtk.Window):
         display = Gdk.Display.get_default()
         if display is None:
             return
-        monitor = display.get_primary_monitor()
+        monitor = display.get_primary_monitor()  # type: ignore[attr-defined]
         if monitor is None:
             monitors = display.get_monitors()
             if monitors.get_n_items() > 0:
                 monitor = monitors.get_item(0)
         if monitor is None:
             return
-        geometry = monitor.get_geometry()
+        geometry = monitor.get_geometry()  # type: ignore[attr-defined]
         x = geometry.x + (geometry.width - _SPLASH_WIDTH) // 2
         y = geometry.y + (geometry.height - _SPLASH_HEIGHT) // 2
         # Log the computed center for debugging; the WM will

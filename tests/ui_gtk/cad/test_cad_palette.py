@@ -1,13 +1,11 @@
 """Unit tests for CadToolPalette."""
 
-import importlib
-import sys
-
-# Ensure clean reload of cad_palette module after mock setup in conftest
-if "rayforge.ui_gtk.cad.cad_palette" in sys.modules:
-    importlib.reload(sys.modules["rayforge.ui_gtk.cad.cad_palette"])
+import pytest
 
 from rayforge.ui_gtk.cad.cad_palette import CadToolPalette
+
+
+pytestmark = pytest.mark.ui
 
 
 def test_cad_palette_initialization():
@@ -22,6 +20,7 @@ def test_cad_palette_initialization():
     assert "offset" in palette._tool_buttons
     assert "tabs" in palette._tool_buttons
     assert "measure" in palette._tool_buttons
+    assert not palette._tool_buttons["measure"].get_sensitive()
 
 
 def test_cad_palette_set_active_tool():

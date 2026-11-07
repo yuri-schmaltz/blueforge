@@ -30,10 +30,10 @@ if _REPO_ROOT not in sys.path:
 # rayforge pulls in cairo/Gtk which the sandbox
 # doesn't have. The test file is exercised by CI in
 # the normal dev environment where cairo is present.
-import importlib
-import importlib.util
-import sys
-import types
+import importlib  # noqa: E402
+import importlib.util  # noqa: E402
+import sys  # noqa: E402
+import types  # noqa: E402
 
 
 def _load_module(name: str, path: str):
@@ -54,10 +54,10 @@ def _load_module(name: str, path: str):
 # module's __package__ is plausible. This is
 # required for @dataclass to find cls.__module__.
 _fake_pkg = types.ModuleType("rayforge")
-_fake_pkg.__path__ = []  # mark as package
+_fake_pkg.__path__ = [os.path.join(_REPO_ROOT, "rayforge")]  # mark as package
 sys.modules.setdefault("rayforge", _fake_pkg)
 _fake_gtk = types.ModuleType("rayforge.ui_gtk")
-_fake_gtk.__path__ = []
+_fake_gtk.__path__ = [os.path.join(_REPO_ROOT, "rayforge", "ui_gtk")]
 sys.modules.setdefault("rayforge.ui_gtk", _fake_gtk)
 
 _dc = _load_module(
@@ -243,9 +243,6 @@ class TestWorkspaceRoundTrip(unittest.TestCase):
         from pathlib import Path
         list_workspaces = _ws.list_workspaces
         save_workspace = _ws.save_workspace
-        Workspace = _ws.Workspace
-        load_workspace = _ws.load_workspace
-        delete_workspace = _ws.delete_workspace
         _make_default_workspace = _ws._make_default_workspace
         # Save a default first (so list finds it)
         save_workspace(
@@ -337,7 +334,6 @@ class TestDockLayoutRoundTrip(unittest.TestCase):
 
     def test_is_valid_detects_duplicates(self) -> None:
         DockLayout = _dl.DockLayout
-        Zone = _dl.Zone
         layout = DockLayout(
             top="right_pane", right="right_pane",
         )
@@ -345,7 +341,6 @@ class TestDockLayoutRoundTrip(unittest.TestCase):
 
     def test_json_round_trip(self) -> None:
         DockLayout = _dl.DockLayout
-        Zone = _dl.Zone
         layout = DockLayout(
             top="coord_bar", right="right_pane"
         )
