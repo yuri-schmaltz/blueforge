@@ -8,12 +8,12 @@ from ...context import get_context
 from ...core.material_library import MaterialLibrary
 from ..doceditor.material_library_list import LibraryListWidget
 from ..doceditor.material_list import MaterialListWidget
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class MaterialManagerPage(TrackedPreferencesPage):
+class MaterialManagerPage(BasePreferencesPage):
     """
     Widget for managing materials and libraries.
     """

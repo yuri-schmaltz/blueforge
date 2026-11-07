@@ -26,9 +26,9 @@ Why local-only? Two reasons:
      metrics can overcount or undercount depending on how
      the user actually interacts.
 
-The 'usage tracker' (rayforge/util/usage.py) already records
-the action fires and mode transitions. This panel just
-queries that tracker at dialog-open time. No persistent
+The 'local tracker' (rayforge/util/local_tracker.py) already
+records the action fires and mode transitions. This panel
+just queries that tracker at dialog-open time. No persistent
 state beyond the tracker's own (in-memory) counters.
 """
 from __future__ import annotations

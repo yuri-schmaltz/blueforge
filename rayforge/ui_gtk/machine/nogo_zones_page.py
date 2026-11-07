@@ -7,7 +7,7 @@ from ...machine.models.machine import Machine
 from ...machine.models.zone import Zone, ZoneShape
 from ..shared.adwfix import get_spinrow_float
 from ..shared.preferences_group import PreferencesGroupWithButton
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 
 class ZoneRow(Gtk.Box):
@@ -175,7 +175,7 @@ class ZoneListEditor(PreferencesGroupWithButton):
             self.list_box.select_row(row)
 
 
-class NogoZonesPage(TrackedPreferencesPage):
+class NogoZonesPage(BasePreferencesPage):
     key = "nogo-zones"
     path_prefix = "/machine-settings/"
 

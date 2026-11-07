@@ -1,12 +1,12 @@
 from gettext import gettext as _
 
 from ...machine.models.machine import Machine
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from .hook_list import HookList
 from .macro_list import MacroListEditor
 
 
-class HooksMacrosPage(TrackedPreferencesPage):
+class HooksMacrosPage(BasePreferencesPage):
     key = "hooks-macros"
     path_prefix = "/machine-settings/"
 

@@ -10,7 +10,7 @@ from ...shared.util.time_format import format_hours_to_hm
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_group import PreferencesGroupWithButton
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 logger = logging.getLogger(__name__)
 
@@ -307,7 +307,7 @@ class CounterEditDialog(PatchedDialogWindow):
         self.close()
 
 
-class MaintenancePage(TrackedPreferencesPage):
+class MaintenancePage(BasePreferencesPage):
     """
     A preferences page for viewing and managing machine hours.
     """

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Blueforge 1.3.3\n"
 "Report-Msgid-Bugs-To: security@yuri-schmaltz.dev\n"
-"POT-Creation-Date: 2026-11-06 17:00-0300\n"
+"POT-Creation-Date: 2026-11-07 10:15-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -7238,31 +7238,6 @@ msgid "Browse..."
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Privacy"
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Report Anonymous Usage"
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
-#: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid ""
-"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Learn "
-"more</a> about usage tracking and privacy."
-msgstr ""
-
-#: rayforge/ui_gtk/settings/general_preferences_page.py
 #, python-brace-format
 msgid "Theme set to {label}"
 msgstr ""
@@ -7425,27 +7400,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Redo the last action"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
-msgstr ""
-
-#: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "No Thanks"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Allow Reporting"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py

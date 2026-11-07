@@ -11,13 +11,13 @@ from ...machine.driver.driver import (
     ResourceBusyError,
 )
 from ..icons import get_icon
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from ..varset.varsetwidget import VarSet, VarSetWidget
 
 logger = logging.getLogger(__name__)
 
 
-class DeviceSettingsPage(TrackedPreferencesPage):
+class DeviceSettingsPage(BasePreferencesPage):
     """
     A preferences page for reading and writing device settings.
     """

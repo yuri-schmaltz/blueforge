@@ -2,10 +2,8 @@
 
 The InsightsDialog shows simple in-memory usage stats. This
 class is a side-tracker that increments counters on every
-Gio.SimpleAction fire. It is independent of the Umami
-tracker in rayforge/usage.py (which sends data to a server);
-local-tracker is opt-in, zero-network, and never leaves the
-process.
+Gio.SimpleAction fire. It is opt-in, zero-network, and never
+leaves the process.
 
 API:
 
@@ -89,8 +87,7 @@ class LocalTracker:
         self._session_start = time.monotonic()
 
 
-# Singleton accessor. Mirrors the pattern in
-# rayforge/usage.py:get_usage_tracker() so callers can do
+# Singleton accessor, so callers can do
 # `from ..util.local_tracker import get_local_tracker`
 # without thinking about instances.
 _instance: Optional[LocalTracker] = None

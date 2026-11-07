@@ -6,10 +6,10 @@ from raygeo.ops.axis import Axis
 
 from ...machine.models.machine import Machine, Origin
 from ..shared.adwfix import get_spinrow_float
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 
-class HardwarePage(TrackedPreferencesPage):
+class HardwarePage(BasePreferencesPage):
     key = "hardware"
     path_prefix = "/machine-settings/"
 

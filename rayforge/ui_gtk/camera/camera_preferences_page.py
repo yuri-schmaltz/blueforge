@@ -9,7 +9,7 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import display_name
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from ..shared.slider import create_slider
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
@@ -295,7 +295,7 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
         self._controller.config.distortion_p2 = self.p2_spin.get_value()
 
 
-class CameraPreferencesPage(TrackedPreferencesPage):
+class CameraPreferencesPage(BasePreferencesPage):
     key = "camera"
     path_prefix = "/machine-settings/"
 

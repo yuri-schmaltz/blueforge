@@ -5,14 +5,14 @@ from gi.repository import Adw, Gtk
 
 from ...machine.driver import drivers, get_driver_cls
 from ...machine.models.machine import Machine
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..varset.varsetwidget import VarSetWidget
 
 logger = logging.getLogger(__name__)
 
 
-class GeneralPreferencesPage(TrackedPreferencesPage):
+class GeneralPreferencesPage(BasePreferencesPage):
     key = "general"
     path_prefix = "/machine-settings/"
 

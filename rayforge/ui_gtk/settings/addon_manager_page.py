@@ -4,12 +4,12 @@ from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
 from ..addon_manager.addon_list import AddonListWidget
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class AddonManagerPage(TrackedPreferencesPage):
+class AddonManagerPage(BasePreferencesPage):
     """
     Widget for managing installed addons.
     """

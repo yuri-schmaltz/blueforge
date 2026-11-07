@@ -1,7 +1,6 @@
 import logging
 import os
 from dataclasses import dataclass, fields
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -128,9 +127,6 @@ class Config:
         # notify users about unrelated upstream versions. Users can
         # opt-in via Settings → Preferences.
         self.check_for_app_updates: bool = False
-        # Usage tracking consent date: None = not asked, "" = declined,
-        # ISO date string = consent given on that date
-        self.usage_consent_date: Optional[str] = None
         # Default DPI for unitless SVG imports
         self.import_dpi: float = 96.0
         # Language preference: None = system default, or a code like "de"
@@ -347,34 +343,6 @@ class Config:
         self.language = language
         self.changed.send(self)
 
-    def set_usage_consent(self, consent: bool):
-        """Sets the usage tracking consent preference."""
-        new_value = ""
-        if consent:
-            new_value = datetime.now().isoformat()
-        if self.usage_consent_date == new_value:
-            return
-        self.usage_consent_date = new_value
-        self.changed.send(self)
-
-    @property
-    def has_consented_tracking(self) -> bool:
-        """Returns True if user has consented to usage tracking after
-        the current policy date."""
-        if not self.usage_consent_date or self.usage_consent_date == "":
-            return False
-        try:
-            consent_date = datetime.fromisoformat(self.usage_consent_date)
-            policy_date = datetime(2026, 2, 24)
-            return consent_date >= policy_date
-        except (ValueError, TypeError):
-            return False
-
-    @property
-    def has_declined_tracking(self) -> bool:
-        """Returns True if user has explicitly declined usage tracking."""
-        return self.usage_consent_date == ""
-
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
@@ -404,7 +372,6 @@ class Config:
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
             "ops_color_mode": self.ops_color_mode.value,
-            "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
             "language": self.language,
         }
@@ -471,9 +438,6 @@ class Config:
             config.ops_color_mode = OpsColorMode(ops_color_mode_str)
         except ValueError:
             config.ops_color_mode = OpsColorMode.LASER
-
-        # Load usage tracking consent date
-        config.usage_consent_date = data.get("usage_consent_date", None)
 
         # Load import DPI
         config.import_dpi = data.get("import_dpi", 96.0)

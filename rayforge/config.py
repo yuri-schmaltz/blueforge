@@ -66,13 +66,6 @@ ADDON_REGISTRY_URL = (
     "main/registry.yaml"
 )
 
-# Analytics are disabled in Blueforge. The upstream Umami endpoint
-# is not used; users who want telemetry can opt in via their own
-# reverse-proxy or by setting UMAMI_URL/UMAMI_WEBSITE_ID at build
-# time.
-UMAMI_URL = ""
-UMAMI_WEBSITE_ID = ""
-
 
 def getflag(name, default=False):
     default = "true" if default else "false"

@@ -14,7 +14,7 @@ from ...pipeline.transformer import OpsTransformer
 from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from ..varset.varsetwidget import VarSetWidget
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings.base import StepComponentSettingsWidget
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
 
 
-class GeneralStepSettingsView(TrackedPreferencesPage):
+class GeneralStepSettingsView(BasePreferencesPage):
     """A view for the general and producer settings of a Step."""
 
     changed = Signal()
@@ -209,7 +209,7 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self.editor.step.rename_step(self.step, new_name)
 
 
-class PostProcessingSettingsView(TrackedPreferencesPage):
+class PostProcessingSettingsView(BasePreferencesPage):
     """A view for the post-processing transformers of a Step."""
 
     use_expanders = True
@@ -340,7 +340,7 @@ class StepSettingsDialog(PatchedDialogWindow):
         step: Step,
         **kwargs,
     ):
-        super().__init__(skip_usage_tracking=True, **kwargs)
+        super().__init__(**kwargs)
         self.editor = editor
         self.step = step
         self.set_title(_("{name} Settings").format(name=step.name))

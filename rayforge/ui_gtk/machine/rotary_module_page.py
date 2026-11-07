@@ -17,7 +17,7 @@ from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from ..sim3d.renderer.model_renderer import get_model_extent
 
 
@@ -217,7 +217,7 @@ class RotaryModuleListEditor(PreferencesGroupWithButton):
             self.list_box.select_row(row)
 
 
-class RotaryModulePage(TrackedPreferencesPage):
+class RotaryModulePage(BasePreferencesPage):
     key = "rotary-module"
     path_prefix = "/machine-settings/"
 

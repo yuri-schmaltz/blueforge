@@ -13,7 +13,7 @@ from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float, get_spinrow_int
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..sim3d.renderer.model_renderer import get_model_extent
 
@@ -202,7 +202,7 @@ class LaserListEditor(PreferencesGroupWithButton):
             self.list_box.select_row(row)
 
 
-class LaserPreferencesPage(DebounceMixin, TrackedPreferencesPage):
+class LaserPreferencesPage(DebounceMixin, BasePreferencesPage):
     key = "laser"
     path_prefix = "/machine-settings/"
 

@@ -3,12 +3,12 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class AdvancedPreferencesPage(TrackedPreferencesPage):
+class AdvancedPreferencesPage(BasePreferencesPage):
     key = "advanced"
     path_prefix = "/machine-settings/"
 

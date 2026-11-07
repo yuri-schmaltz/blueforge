@@ -1,18 +1,12 @@
 from gi.repository import Adw
 
-from ...usage import get_usage_tracker
 
+class BasePreferencesPage(Adw.PreferencesPage):
+    """Base class for the app's Adw.PreferencesPage subclasses.
 
-class TrackedPreferencesPage(Adw.PreferencesPage):
-    key = ""
-    path_prefix = "/settings/"
+    It exists so the settings pages share a single import target
+    and a common place to hang future shared behaviour.
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.connect("map", self._on_map)
-
-    def _on_map(self, widget):
-        if self.key:
-            get_usage_tracker().track_page_view(
-                f"{self.path_prefix}{self.key}", self.key
-            )

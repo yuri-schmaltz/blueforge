@@ -10,7 +10,7 @@ from ..icons import get_icon
 from ..machine.profile_selector import MachineProfileSelectorDialog
 from ..machine.settings_dialog import MachineSettingsDialog
 from ..shared.gtk import apply_css
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 
 css = """
 .group-with-button-container > .list-box-in-card {
@@ -34,7 +34,7 @@ css = """
 """
 
 
-class MachineSettingsPage(TrackedPreferencesPage):
+class MachineSettingsPage(BasePreferencesPage):
     """A settings page for adding, removing, and managing machines."""
 
     key = "machines"

@@ -4,13 +4,13 @@ from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
 from ..shared.adwfix import get_spinrow_int
-from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.preferences_page import BasePreferencesPage
 from .dialect_list import DialectListEditor
 
 logger = logging.getLogger(__name__)
 
 
-class GcodeSettingsPage(TrackedPreferencesPage):
+class GcodeSettingsPage(BasePreferencesPage):
     key = "gcode"
     path_prefix = "/machine-settings/"
 
